@@ -6,7 +6,7 @@ body {
     color: #3d5471;
 }
 
-.container {
+/* .container {
     width: 90vw;
     margin: 1.5em auto;
     background: #fff;
@@ -27,7 +27,7 @@ h1 {
     letter-spacing: 0.075em;
     text-align: center;
     text-shadow: 0 0.125em 0.5em rgba(99,102,241,0.07);
-}
+} */
 
 /* Table styling */
 table {
@@ -37,7 +37,10 @@ table {
     background: #fff;
     margin-bottom: 2em;
     box-shadow: 0 0.125em 0.75em rgba(99,102,241,0.06);
-    border-radius: 0.75em;
+    /* border-radius: 0.75em; */
+    /* make border radius only on bottom left and bottom right */
+    border-bottom-left-radius: 0.75em;
+    border-bottom-right-radius: 0.75em;
     overflow: hidden;
 }
 

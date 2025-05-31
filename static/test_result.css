@@ -228,8 +228,8 @@ img, img.screenshot {
     max-width: 15rem;
     max-height: 10rem;
     cursor: pointer;
-    border-radius: 0.25rem;
-    border: 1px solid #aaa;
+    /* border-radius: 0.25rem;
+    border: 1px solid #aaa; */
 }
 .modal {
     display: none;

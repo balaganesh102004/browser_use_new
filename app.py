@@ -9,11 +9,15 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import AzureChatOpenAI
 from pydantic import SecretStr
 from dotenv import load_dotenv
+from langchain_core.messages import HumanMessage, SystemMessage
 from report_generator import render_report 
 import io
 import uuid
 from datetime import datetime
 from flask import abort
+import base64
+import re
+
 
 load_dotenv()
 
@@ -223,10 +227,10 @@ async def run_task_async(task):
         llm=llm,
         planner_llm=planner_llm_instance,
         override_system_message=override_system_prompt,
-        browser_profile=browser_config
+        browser_profile=browser_config,
     )
     try:
-        history = await agent.run()
+        history = await agent.run(max_steps=10)
         return history.model_dump()
     finally:
         if hasattr(agent, "close"):
@@ -291,8 +295,18 @@ def history():
                     content = f.read()
                     def extract(field):
                         import re
-                        m = re.search(rf'<strong>{field}:</strong>\s*([^<]+)', content)
-                        return m.group(1).strip() if m else "N/A"
+                        pattern = rf'<span[^>]*>\s*{re.escape(field)}:\s*</span>\s*<span[^>]*>(.*?)</span>'
+                        m = re.search(pattern, content, re.IGNORECASE | re.DOTALL)
+                        if m:
+                            return m.group(1).strip()
+                        
+                        if field.lower() == "status":
+                            pattern = rf'<span[^>]*class="status-pill"[^>]*>(.*?)</span>'
+                            match = re.search(pattern, content, re.IGNORECASE | re.DOTALL)
+                            if match:
+                                return match.group(1).strip()
+                        return 'N/A'
+
                     runs.append({
                         "id": extract("Test Run ID"),
                         "file": fname,
@@ -385,6 +399,39 @@ def generate():
 SCREENSHOTS_FOLDER = os.path.join(os.getcwd(), 'screenshots')
 os.makedirs(SCREENSHOTS_FOLDER, exist_ok=True)
 
+def fix_base64_padding(b64_string):
+    return b64_string + '=' * (-len(b64_string) % 4)
+
+def save_base64_image(base64_str, output_dir="./screenshots/"):
+    # Extract header if present
+    match = re.match(r'data:image/(?P<ext>[^;]+);base64,(?P<data>.+)', base64_str)
+    if not match:
+        raise ValueError("Invalid base64 image string")
+
+    ext = match.group('ext')  # e.g., png, jpeg, jpg, gif
+    data = match.group('data')
+
+    # Fix padding
+    data += '=' * (-len(data) % 4)
+
+    # Generate a unique filename
+    filename = f'screenshot_{uuid.uuid4().hex[:8]}.{ext}'
+    filepath = os.path.join(output_dir, filename)
+
+    # Decode and write the image
+    with open(filepath, "wb") as f:
+        f.write(base64.b64decode(data))
+
+    return filename
+
+@app.route('/api/upload_screenshot', methods=['POST'])
+def api_upload_screenshot():
+    screenshot = request.json.get('fileData')
+    if screenshot and len(screenshot) > 0:
+        filename = save_base64_image(fix_base64_padding(screenshot), SCREENSHOTS_FOLDER)
+        return jsonify({'screenshot': f'/screenshots/{filename}'})
+    return jsonify({'error': 'No screenshot found'}), 404
+
 @app.route('/api/fetch_screenshot', methods=['POST'])
 def api_fetch_screenshot():
     url = request.json.get('url')
@@ -463,9 +510,6 @@ def serve_screenshot(filename):
 
 @app.route('/api/generate_scenarios', methods=['POST'])
 def api_generate_scenarios():
-    import base64, re
-    from langchain_core.messages import HumanMessage, SystemMessage
-
     data = request.json
     url = data.get('url', '')
     info = data.get('info', '')
@@ -478,33 +522,17 @@ def api_generate_scenarios():
     url_prompt = f"Refer URL if provided: {url}" if url else ""
     prompt = f"""
     You are a senior QA automation engineer. 
-    Generate an elaborate end-to-end test scenario that covers all relevant test cases for the given feature in a single test flow, group by features. 
+    Generate an elaborate end-to-end test scenarios in descriptive way for the given image and group the scenario by feature.
 
-    Each scenario should:
-    Include multiple sequential steps that mimic a real user or system behavior.
-    Always start the test scenario with a opening a web page or application.
-    Clearly describe the actions to be performed, including any necessary inputs or interactions.
-    Clearly specify input test data and expected outcomes.
-    Include assertions after each significant step to validate system behavior.
+    URL: {url} 
+
+    Each scenario must follow these guidelines:
+    Strictly write the test scenario as description of the steps to perform.
+    Strictly always start the test scenario with a opening a web page or application using the URL provided.
     Mention any preconditions, setup data, or environment assumptions.
-    Cover happy path, edge cases, and any negative checks that can be reasonably tested within the flow.
-    Be written in a clear, concise, and structured format (you may use Gherkin-style, pseudocode, or narrative style depending on clarity).
-    Finally, ensure that the scenarios are grouped logically by feature or functionality to avoid redundancy and improve readability.
     Each scenario should be self-contained and not rely on external context or previous scenarios.
     
-    The goal is to have a comprehensive grouped testcases that effectively verifies most aspects of the feature under test through a realistic and comprehensive scenario.
-
-    Analyze this image of a web page or application UI.
-    {url_prompt}
-
-    {task_prompt}
-
-    For the scenario, provide:
-    1. A descriptive name
-    2. A detailed comprehensive conjunctive instruction to perform the test scenario
-    3. Relevant tags (comma-separated)
-    
-    Format your response as JSON like this:
+    Strictly use the below format for the response as JSON like:
     {{
         "scenarios": [
         {{
@@ -515,38 +543,46 @@ def api_generate_scenarios():
         ...
         ]
     }}
+    
+    The goal is to have a comprehensive grouped testcases that effectively verifies most aspects of the feature under test through a realistic and comprehensive scenario.
+    {url_prompt}
+    {task_prompt}
     """
 
     # Read and encode selected screenshots as base64
-    image_messages = []
+    scenarios = []
     for filename in screenshots:
         # Remove leading slash if present
         filename = filename.lstrip('/')
         image_path = os.path.join(SCREENSHOTS_FOLDER, os.path.basename(filename))
+        image_ext = os.path.splitext(os.path.basename(filename))[1].lower()
         if not os.path.exists(image_path):
             continue
         with open(image_path, "rb") as img_file:
             base64_image = base64.b64encode(img_file.read()).decode('utf-8')
-            image_messages.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}})
+            try:
+                llm = get_agent_llm()
+                
+                messages = [
+                    SystemMessage(content="You are a QA expert specializing in identifying test scenarios from UI images."),
+                    HumanMessage(content=[
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": f"data:image/{image_ext};base64,{base64_image}"}}
+                    ])
+                ]
+                response = llm.invoke(messages)
+                json_match = re.search(r'\{[\s\S]*\}', response.content)
+                if json_match:
+                    scenarios_data = json.loads(json_match.group(0))
+                    print("Scenarios data:", scenarios_data)
+                    scenarios.extend(scenarios_data.get("scenarios", []))
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
 
-    if not image_messages:
-        return jsonify({'error': 'No valid screenshots found'}), 400
-
-    try:
-        llm = get_agent_llm()
-        messages = [
-            SystemMessage(content="You are a QA expert specializing in identifying test scenarios from UI images."),
-            HumanMessage(content=[{"type": "text", "text": prompt}] + image_messages)
-        ]
-        response = llm.invoke(messages)
-        json_match = re.search(r'\{[\s\S]*\}', response.content)
-        if json_match:
-            scenarios_data = json.loads(json_match.group(0))
-            return jsonify({'scenarios': scenarios_data.get("scenarios", [])})
-        else:
-            return jsonify({'error': 'Could not parse JSON from LLM response'}), 500
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    if scenarios:
+        return jsonify({'scenarios': scenarios}), 200
+    else:
+        return jsonify({'error': 'Could not parse JSON from LLM response'}), 500
 
 @app.route('/api/get_models', methods=['POST'])
 def get_models():

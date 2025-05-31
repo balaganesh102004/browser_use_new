@@ -68,7 +68,7 @@ function renderModelDropdown(selectId, argsDivId, modelDivId, currentSettings) {
     });
 }
 
-function renderLlmArgs(selectId, argsDivId, modelDivId, currentSettings) {
+function renderLlmArgs(selectId, argsDivId, currentSettings) {
     const select = document.getElementById(selectId);
     const argsDiv = document.getElementById(argsDivId);
     const llm = select.value;
@@ -82,32 +82,20 @@ function renderLlmArgs(selectId, argsDivId, modelDivId, currentSettings) {
             `;
         });
     }
-    // Add event listeners to API key fields to trigger model fetching
-    setTimeout(() => {
-        LLM_ARGS[llm]?.forEach(arg => {
-            if (arg.name.includes("api_key") || arg.name.includes("endpoint")) {
-                const input = document.getElementById(`${selectId}-${arg.name}`);
-                if (input) {
-                    input.addEventListener("blur", () => renderModelDropdown(selectId, argsDivId, modelDivId, currentSettings));
-                }
-            }
-        });
-        // Initial fetch
-        renderModelDropdown(selectId, argsDivId, modelDivId, currentSettings);
-    }, 0);
 }
 
 document.addEventListener("DOMContentLoaded", function() {
+    // These objects should be rendered from Flask context if you want to prefill values
     const agentLlmSettings = window.agentLlmSettings || {};
     const plannerLlmSettings = window.plannerLlmSettings || {};
 
-    renderLlmArgs("agent-llm", "agent-llm-args", "agent-llm-model-div", agentLlmSettings);
-    renderLlmArgs("planner-llm", "planner-llm-args", "planner-llm-model-div", plannerLlmSettings);
+    renderLlmArgs("agent-llm", "agent-llm-args", agentLlmSettings);
+    renderLlmArgs("planner-llm", "planner-llm-args", plannerLlmSettings);
 
     document.getElementById("agent-llm").addEventListener("change", function() {
-        renderLlmArgs("agent-llm", "agent-llm-args", "agent-llm-model-div");
+        renderLlmArgs("agent-llm", "agent-llm-args");
     });
     document.getElementById("planner-llm").addEventListener("change", function() {
-        renderLlmArgs("planner-llm", "planner-llm-args", "planner-llm-model-div");
+        renderLlmArgs("planner-llm", "planner-llm-args");
     });
 });

@@ -18,11 +18,22 @@ body {
     position: relative;
 }
 
-h1 {
+.page-heading {
+    margin: 0 !important;
+    text-align: center;
+    color: #3730a3;
+    background-color: #e0e7ff;
+    /* make border radiues topleft and topright */
+    border-top-left-radius: 1.2rem;
+    border-top-right-radius: 1.2rem;
+    letter-spacing: 0.0625rem;
+}
+
+/* h1 {
     text-align: center;
     color: #5b21b6;
     letter-spacing: 0.0625rem;
-}
+} */
 
 /* --- HEADER --- */
 .header-bar {
@@ -51,14 +62,13 @@ h1 {
 .header-row {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    gap: 1rem;
     margin-bottom: 2rem;
 }
 .logo-stack {
     display: flex;
     flex-direction: row-reverse;
     align-items: end;
-    gap: 0.5rem;
     margin-bottom: 0;
 }
 .logo-stack .logo-img {
@@ -76,10 +86,7 @@ h1 {
     letter-spacing: 0.0625rem;
 }
 
-/* --- SEARCH BAR --- */.search-bar-container {
-    width: 90%;
-    max-width: 56.25em;
-    margin: 0 auto 1.2em auto;
+.search-bar-container {
     display: flex;
     justify-content: center;
 }
@@ -107,28 +114,30 @@ h1 {
 
 /* --- ACTIONS BAR --- */
 .actions-bar {
-    width: 100%;
+    /* width: 100%;
     max-width: 90em;
     margin: 0 auto 2.5rem auto;
     margin-top: 1.2rem;
-    padding: 1.5rem 2.5rem;
+    padding: 1.5rem 2.5rem; */
+    padding: 1rem;
     border: 2px solid #e0e7ff;
-    border-radius: 1.2rem;
-    background: #f8fafc;
+    /* border-radius: 1.2rem; */
+    /* make border radius only bottom left and bottom right */
+    border-bottom-left-radius: 1.2rem;
+    border-bottom-right-radius: 1.2rem;
+    /* background: #f8fafc; */
     box-shadow: 0 0.25em 1em rgba(79,70,229,0.06);
     display: flex;
     align-items: center;
     gap: 2.2em;
-    justify-content: flex-start;
-    position: relative;
-    min-height: 6.5em;
+    justify-content: space-between;
 }
 
 .actions-bar input[type="text"]#task-search {
-    flex: 2 1 420px;
+    /* flex: 2 1 420px; */
     min-width: 320px;
     max-width: 600px;
-    padding: 1.1em 1.5em;
+    /* padding: 1.1em 1.5em; */
     font-size: 1.13em;
     border: 1.5px solid #c7d2fe;
     border-radius: 0.8em;
@@ -136,7 +145,7 @@ h1 {
     color: #1e293b;
     transition: border 0.18s, box-shadow 0.18s;
     box-shadow: 0 1px 6px rgba(99,102,241,0.07);
-    margin-right: 2em;
+    /* margin-right: 2em; */
 }
 
 .actions-bar input[type="text"]#task-search:focus {
@@ -145,16 +154,21 @@ h1 {
     box-shadow: 0 0 0 2px #6366f1;
 }
 
+.actions-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
 .selected-count {
     font-weight: 700;
     color: #4f46e5;
     font-size: 1.13rem;
-    margin-right: 2.5rem;
-    margin-left: 0.5rem;
+    /* margin-right: 1.5rem; */
+    /* margin-left: 0.5rem; */
     letter-spacing: 0.01em;
-    background: #eef2ff;
-    border-radius: 1.2em;
-    padding: 0.45em 1.1em;
     display: inline-block;
 }
 
@@ -165,7 +179,7 @@ h1 {
 .delete-button,
 .generate-button,
 .update-button {
-    padding: 0.9em 1.2em;
+    padding: 1em;
     font-size: 1em;
     border-radius: 2em;
     box-sizing: border-box;
@@ -173,13 +187,13 @@ h1 {
     background: none;
     border: none; /* Remove border color */
     transition: background 0.2s, box-shadow 0.2s;
-    margin: 0 0.3em;
-    min-width: 7em;
+    white-space: nowrap;
+    /* margin: 0 0.3em; */
+    /* min-width: 7em; */
 }
 .run-button {
     background: #06b6d4;
     color: #fff;
-    margin-right: 1.5rem;
 }
 .run-button:hover {
     background: #2563eb;
@@ -190,7 +204,6 @@ h1 {
 .create-button {
     background: #22c55e;
     color: #fff;
-    margin-left: 0.8rem;
 }
 .create-button:hover {
     background: #16a34a;
@@ -200,7 +213,7 @@ h1 {
 .edit-button {
     background: #6366f1;
     color: #fff;
-    margin-right: 0.5em;
+    /* margin-right: 0.5em; */
 }
 .edit-button:hover {
     background: #7c3aed;
@@ -208,7 +221,7 @@ h1 {
 .delete-button {
     background: #ef4444;
     color: #fff;
-    margin-left: 0.5em;
+    /* margin-left: 0.5em; */
 }
 .delete-button:hover {
     background: #dc2626;
@@ -229,7 +242,7 @@ h1 {
     gap: 1.5rem;
     width: 100%;
     box-sizing: border-box;
-    margin: 0;
+    margin: 1.5rem 0;
     justify-content: flex-start;
     align-items: stretch;
 }
@@ -299,7 +312,7 @@ a:hover {
     font-size: 1.03em;
     line-height: 1.6;
     overflow-y: auto;
-    max-height: 7.5em; /* Adjust for your design */
+    max-height: 12em; /* Adjust for your design */
     min-height: 4em;
     padding-right: 0.2em;
     scrollbar-width: thin;
@@ -710,7 +723,8 @@ a:hover {
     transform: translateY(-50%);
     display: flex;
     flex-direction: row;
-    gap: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
     background: #f8fafc;
     border-radius: 1rem;
     box-shadow: 0 0.125em 0.5em rgba(99,102,241,0.10);
@@ -779,13 +793,13 @@ a:hover {
 .tag-pill {
     display: inline-block;
     color: #fff;
-    font-size: 0.92em;
-    font-weight: 600;
+    /* font-size: 0.92em;
+    font-weight: 600; */
     border-radius: 1.2em;
     padding: 0.22em 0.95em;
     margin: 0 0.18em 0.18em 0;
     box-shadow: 0 1px 4px rgba(99,102,241,0.08);
-    letter-spacing: 0.01em;
+    /* letter-spacing: 0.01em; */
     vertical-align: middle;
     transition: background 0.18s, color 0.18s;
     border: none;

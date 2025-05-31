@@ -216,8 +216,8 @@ body {
 .settings-cards-wrapper {
     display: flex;
     flex-wrap: wrap;
-    gap: 2rem;
-    justify-content: center;
+    gap: 1rem;
+    justify-content: space-between;
     margin-bottom: 2rem;
 }
 .settings-card {
@@ -225,9 +225,7 @@ body {
     border-radius: 1.1rem;
     box-shadow: 0 2px 16px rgba(99,102,241,0.07);
     padding: 2rem 1.5rem 1.5rem 1.5rem;
-    min-width: 320px;
-    max-width: 370px;
-    flex: 1 1 320px;
+    flex: 1 1;
     display: flex;
     flex-direction: column;
     gap: 1.2rem;

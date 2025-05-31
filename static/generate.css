@@ -1,26 +1,33 @@
+body {
+    margin: 0;
+    font-family: 'Noto Sans', 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    background: #f0f4ff;
+}
 /* --- Improved Generate Page Layout: Reduced Gaps & Enhanced UI --- */
-
 .generate-main {
     display: flex;
+    flex-direction: column;
     gap: 1.5rem; /* Reduced gap */
-    margin-top: 1.5rem;
     justify-content: space-between;
     align-items: flex-start;
     flex-wrap: wrap;
+    width: 100%;
+}
+
+.generate-main > * {
+  width: 100%;
 }
 
 .generate-left, .generate-right {
     background: #f8fafc;
     border-radius: 1.1rem;
     box-shadow: 0 2px 16px rgba(99,102,241,0.07);
-    padding: 1.5rem 1.2rem 1.2rem 1.2rem; /* Tighter padding */
     display: flex;
     flex-direction: column;
-    gap: 0.9rem; /* Tighter gap */
-    min-width: 40vw;
+    gap: 1rem; /* Tighter gap */
 }
 
-.generate-left {
+/* .generate-left {
     flex: 1.2;
     max-width: 440px;
 }
@@ -31,7 +38,7 @@
     align-items: stretch;
     min-height: 340px;
     justify-content: flex-start;
-}
+} */
 
 .generate-left label,
 .generate-left strong,
@@ -55,7 +62,6 @@
     transition: border 0.18s, box-shadow 0.18s;
     box-shadow: 0 1px 4px rgba(99,102,241,0.06);
     outline: none;
-    margin-bottom: 0.5em;
     box-sizing: border-box;
 }
 
@@ -70,10 +76,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.5em;
-    margin-top: 0.3em;
-    margin-bottom: 0.3em;
-    min-height: 2.5em;
-    padding: 0.3em 0;
+    padding: 1rem;
     border-radius: 0.4em;
     background: #f3f4f6;
 }
@@ -86,8 +89,8 @@
 }
 
 .screenshot-thumb {
-    width: 56px;
-    height: 56px;
+    width: 15rem;
+    height: 15rem;
     object-fit: cover;
     border-radius: 0.5em;
     box-shadow: 0 2px 8px rgba(99,102,241,0.10);
@@ -153,11 +156,10 @@
 }
 
 .generate-btn {
-    width: 100%;
     padding: 1em 0;
     font-size: 1.08em;
     border-radius: 2em;
-    font-weight: 800;
+    font-weight: 700;
     background: linear-gradient(90deg, #6366f1 0%, #7c3aed 100%);
     color: #fff;
     border: none;
@@ -191,13 +193,6 @@
     white-space: pre-wrap;
     overflow-x: auto;
     border: 1.2px solid #e0e7ff;
-}
-
-.logo-img {
-    border: none;
-    max-height: 44px;
-    margin-right: 0.5em;
-    background: transparent;
 }
 
 @media (max-width: 1100px) {

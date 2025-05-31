@@ -1,11 +1,17 @@
 {
-    "agent_llm": "gemini",
+    "agent_llm": "azure_openai",
     "agent_llm_args": {
-        "gemini_api_key": "AIzaSyCY66ylwwUMy_yathgsfKM9ao4Zm_EL13Q"
+        "azure_openai_api_key": "96d73255e5a7435eaac3a32c56d7829f",
+        "azure_openai_api_version": "2025-01-01-preview",
+        "azure_openai_api_endpoint": "https://cei-aoai.openai.azure.com/openai/deployments/gpt-4o-mini/chat/completions?api-version=2025-01-01-preview",
+        "model-name": "gpt-4o"
     },
-    "planner_llm": "gemini",
+    "planner_llm": "azure_openai",
     "planner_llm_args": {
-        "gemini_api_key": "AIzaSyCY66ylwwUMy_yathgsfKM9ao4Zm_EL13Q"
+        "azure_openai_api_key": "96d73255e5a7435eaac3a32c56d7829f",
+        "azure_openai_api_version": "2025-01-01-preview",
+        "azure_openai_api_endpoint": "https://cei-aoai.openai.azure.com/openai/deployments/gpt-4o-mini/chat/completions?api-version=2025-01-01-preview",
+        "model-name": "gpt-4o-mini"
     },
     "headless_mode": true,
     "highlight_elements": false

@@ -119,8 +119,8 @@ img, img.screenshot {
     max-width: 15rem;
     max-height: 10rem;
     cursor: pointer;
-    border-radius: 0.4rem;
-    border: 1px solid #bbb;
+    /* border-radius: 0.4rem;
+    border: 0px solid #bbb; */
     transition: transform 0.2s;
 }
 
