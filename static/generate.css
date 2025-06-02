@@ -89,7 +89,6 @@ body {
 }
 
 .screenshot-thumb {
-    width: 15rem;
     height: 15rem;
     object-fit: cover;
     border-radius: 0.5em;
@@ -181,6 +180,8 @@ body {
 }
 
 .scenarios-output {
+    display: flex;
+    flex-direction: column;
     margin-top: 1em;
     background: #fff;
     border-radius: 0.6em;
@@ -190,7 +191,7 @@ body {
     font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
     font-size: 0.98em;
     color: #334155;
-    white-space: pre-wrap;
+    /* white-space: pre-wrap; */
     overflow-x: auto;
     border: 1.2px solid #e0e7ff;
 }

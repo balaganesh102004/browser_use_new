@@ -1,6 +1,228 @@
 [
     {
+        "ID": 1,
+        "Task name": "Search GitHub Repository",
+        "Task description": "Go to https://github.com, search for 'python/cpython', and verify that the repository page title contains 'cpython'.",
+        "Tags": [
+            "github",
+            "search"
+        ]
+    },
+    {
+        "ID": 2,
+        "Task name": "Read PyPI Package Version",
+        "Task description": "Open https://pypi.org/project/requests/ and read the version number displayed next to the package title.",
+        "Tags": [
+            "pypi",
+            "package"
+        ]
+    },
+    {
+        "ID": 3,
+        "Task name": "Extract Holidays from Google Calendar",
+        "Task description": "Visit https://calendar.google.com/calendar/embed?src=en.indian%23holiday%40group.v.calendar.google.com and list the holidays shown for the current month.",
+        "Tags": [
+            "calendar"
+        ]
+    },
+    {
+        "ID": 4,
+        "Task name": "Button Navigation Test",
+        "Task description": "Go to https://letcode.in/button and click the 'Goto Home' button. Verify redirection to LetCode homepage.",
+        "Tags": [
+            "letcode",
+            "button"
+        ]
+    },
+    {
         "ID": 5,
+        "Task name": "Download Files from LetCode",
+        "Task description": "Visit https://letcode.in/file and download all available files. Verify that download links exist.",
+        "Tags": [
+            "letcode",
+            "download"
+        ]
+    },
+    {
+        "ID": 6,
+        "Task name": "Slider Positioning",
+        "Task description": "Go to https://letcode.in/slider and slide to at least 50. Confirm value reflects change.",
+        "Tags": [
+            "letcode",
+            "slider"
+        ]
+    },
+    {
+        "ID": 7,
+        "Task name": "Add and Remove Elements",
+        "Task description": "Open https://the-internet.herokuapp.com/add_remove_elements/, add 10 elements and remove 5. Verify 5 remain.",
+        "Tags": [
+            "heroku",
+            "elements"
+        ]
+    },
+    {
+        "ID": 8,
+        "Task name": "Check Hover Content",
+        "Task description": "Go to https://the-internet.herokuapp.com/hovers, hover over the first figure and confirm user name is shown.",
+        "Tags": [
+            "hover",
+            "ui"
+        ]
+    },
+    {
+        "ID": 9,
+        "Task name": "Count Links on Page",
+        "Task description": "Visit https://www.wikipedia.org/ and count the number of hyperlinks on the page.",
+        "Tags": [
+            "wikipedia",
+            "link"
+        ]
+    },
+    {
+        "ID": 10,
+        "Task name": "Read Text Content",
+        "Task description": "Visit https://www.python.org/, extract the text of the latest blog post title under 'Latest News'.",
+        "Tags": [
+            "python",
+            "news"
+        ]
+    },
+    {
+        "ID": 11,
+        "Task name": "Search Wikipedia",
+        "Task description": "Go to https://www.wikipedia.org/, search for 'Artificial Intelligence', and confirm that the article title matches.",
+        "Tags": [
+            "wikipedia",
+            "search"
+        ]
+    },
+    {
+        "ID": 12,
+        "Task name": "Handle JavaScript Prompt",
+        "Task description": "Go to https://the-internet.herokuapp.com/javascript_alerts and input text into JS prompt. Confirm response.",
+        "Tags": [
+            "prompt",
+            "js"
+        ]
+    },
+    {
+        "ID": 13,
+        "Task name": "Check Scroll Functionality",
+        "Task description": "Visit https://the-internet.herokuapp.com/infinite_scroll and scroll until 2 new blocks appear.",
+        "Tags": [
+            "scroll",
+            "infinite"
+        ]
+    },
+    {
+        "ID": 14,
+        "Task name": "Copy Code Block",
+        "Task description": "Search 'python list comprehension' on Stack Overflow, open top result, and extract top-voted code block.",
+        "Tags": [
+            "stackoverflow",
+            "code"
+        ]
+    },
+    {
+        "ID": 15,
+        "Task name": "Extract Python Tutorial Titles",
+        "Task description": "Go to https://www.geeksforgeeks.org/python-programming-language/ and list titles of the first 5 tutorials.",
+        "Tags": [
+            "gfg",
+            "python"
+        ]
+    },
+    {
+        "ID": 16,
+        "Task name": "Test Search Autocomplete",
+        "Task description": "Go to https://www.google.com, type 'openai' in search bar and capture top 5 suggestions.",
+        "Tags": [
+            "autocomplete",
+            "search"
+        ]
+    },
+    {
+        "ID": 17,
+        "Task name": "Detect Page Title",
+        "Task description": "Open https://openai.com and return the title of the homepage.",
+        "Tags": [
+            "title"
+        ]
+    },
+    {
+        "ID": 18,
+        "Task name": "Verify Site Language",
+        "Task description": "Visit https://fr.wikipedia.org and verify if page language is French.",
+        "Tags": [
+            "language"
+        ]
+    },
+    {
+        "ID": 19,
+        "Task name": "Get Weather from Google",
+        "Task description": "Search 'weather Chennai' on https://www.google.com and extract temperature.",
+        "Tags": [
+            "weather",
+            "google"
+        ]
+    },
+    {
+        "ID": 20,
+        "Task name": "Count Images on Page",
+        "Task description": "Visit https://www.python.org and count total number of image elements.",
+        "Tags": [
+            "image",
+            "count"
+        ]
+    },
+    {
+        "ID": 21,
+        "Task name": "List News Headlines",
+        "Task description": "Go to https://www.bbc.com/news and list top 3 headlines.",
+        "Tags": [
+            "news",
+            "bbc"
+        ]
+    },
+    {
+        "ID": 22,
+        "Task name": "Extract Contact Link",
+        "Task description": "Visit https://www.openai.com and get the URL of the 'Contact' page.",
+        "Tags": [
+            "contact",
+            "link"
+        ]
+    },
+    {
+        "ID": 23,
+        "Task name": "Scroll to Bottom",
+        "Task description": "Visit https://github.com and scroll to the bottom. Confirm footer is visible.",
+        "Tags": [
+            "scroll",
+            "footer"
+        ]
+    },
+    {
+        "ID": 24,
+        "Task name": "Get Meta Description",
+        "Task description": "Visit https://www.python.org and extract the meta description from the HTML.",
+        "Tags": [
+            "meta",
+            "seo"
+        ]
+    },
+    {
+        "ID": 25,
+        "Task name": "Extract Language Options",
+        "Task description": "Go to https://www.wikipedia.org and list all available language options displayed on the homepage.",
+        "Tags": [
+            "language",
+            "options"
+        ]
+    },
+    {
+        "ID": 26,
         "Task name": "Adding phone to the cart.",
         "Task description": "Go to https://www.flipkart.com. Search for Samsung Galaxy S23 ultra. From the search results, identify a listing for the Samsung Galaxy S23 that is in stock and available for purchase. Click on the product to open its detail page. Confirm it is not sold out. ",
         "Tags": [
@@ -9,12 +231,22 @@
         ]
     },
     {
-        "ID": 6,
+        "ID": 27,
         "Task name": "Google for LED TVs",
         "Task description": "Go to google.com, search for LED TVs and check it returned the results.",
         "Tags": [
             "google",
             " ledtvs"
+        ]
+    },
+    {
+        "ID": 28,
+        "Task name": "Login with valid credentials",
+        "Task description": "Open the web page using the URL https://opensource-demo.orangehrmlive.com/web/index.php/auth/login. Enter a valid username and password into the respective fields. Click on the login button. Verify that the user is successfully redirected to the dashboard page and that the dashboard elements are visible.",
+        "Tags": [
+            "login",
+            " valid credentials",
+            " dashboard"
         ]
     }
 ]

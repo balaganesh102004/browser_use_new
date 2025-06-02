@@ -41,10 +41,10 @@ def render_report(history_data: dict, test_run_id: str = None) -> str:
         });
         </script>
     </head>
-    <body>
+    <body class="report-body">
     """
     report_content += """
-        <h1>Test Run Report</h1>
+        <h1 class="summary-title">Test Run Report</h1>
         <!-- Modal for screenshots -->
         <div id="screenshotModal" class="modal">
             <span class="close">&times;</span>
@@ -96,7 +96,6 @@ def render_report(history_data: dict, test_run_id: str = None) -> str:
     # Add summary section at the top
     report_content += f"""
     <div class="summary">
-        <div class="summary-title">Overall Test Run Summary</div>
         <div class="summary-field">
             <span class="summary-label">Test Run ID:</span>
             <span class="summary-value">{test_run_id if test_run_id else "N/A"}</span>
@@ -147,7 +146,7 @@ def render_report(history_data: dict, test_run_id: str = None) -> str:
         <div class="{accordion_class}">
             <div class="accordion-header" onclick="toggleAccordion(this)">
                 <div>
-                    <strong>Task:</strong> {task_name}
+                    <strong>Test Scenario:</strong> {task_name}
                 </div>
                 <div>
                     <span>Status: {task_status}</span> | <span>Total Duration: {round(tot_duration, 2)} seconds</span>
@@ -237,7 +236,7 @@ def render_report(history_data: dict, test_run_id: str = None) -> str:
                 <td>{current_state.get("memory", "")}</td>
                 <td>{current_state.get("next_goal", "")}</td>
                 <td>{next_eval}</td>
-                <td>{step_result}</td>
+                <td><span class="status-pill status-{step_result.lower()}">{step_result}</span></td>
                 <td>{metadata.get("input_tokens", "")}</td>
                 <td>"""
             if base64_image:
@@ -269,4 +268,4 @@ def classify_sentence(text):
     elif success_found:
         return "Success"
     else:
-        return "Unknown"
+        return ""

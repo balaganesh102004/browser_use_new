@@ -27,8 +27,9 @@ SETTINGS_FILE = 'settings.json'
 
 browser_config = BrowserProfile(
     highlight_elements = False,
-    user_data_dir=None
+    user_data_dir=None,
 )
+
 def load_tasks():
     if not os.path.exists(DATA_FILE):
         return []
@@ -46,6 +47,21 @@ def get_next_id(tasks):
 def index():
     tasks = load_tasks()
     return render_template('index.html', tasks=tasks)
+
+@app.route('/copytask', methods=['POST'])
+def copy_task():
+    # get the values json request
+    data = request.get_json()
+    tasks = load_tasks()
+    new_task = {
+        "ID": get_next_id(tasks),
+        "Task name": data['task_name'],
+        "Task description": data['task_description'],
+        "Tags": data['tags'].split(',')
+    }
+    tasks.append(new_task)
+    save_tasks(tasks)
+    return ''
 
 @app.route('/add', methods=['POST'])
 def add_task():
@@ -227,7 +243,7 @@ async def run_task_async(task):
         llm=llm,
         planner_llm=planner_llm_instance,
         override_system_message=override_system_prompt,
-        browser_profile=browser_config,
+        browser_profile=get_browser_profile(),
     )
     try:
         history = await agent.run(max_steps=10)
@@ -481,7 +497,7 @@ def api_fetch_all_screenshots():
             "wait for all network requests to finish, then take a screenshot of the full page"
         )
         agent = Agent(task=prompt, llm=llm, browser_profile=get_browser_profile())
-        history = asyncio.run(agent.run())
+        history = asyncio.run(agent.run(max_steps=10))
         screenshots = []
         if hasattr(history, 'screenshots'):
             screenshots = history.screenshots()
@@ -682,7 +698,7 @@ def get_browser_profile():
     return BrowserProfile(
         highlight_elements=settings.get("highlight_elements", False),
         user_data_dir=None,
-        headless_mode=settings.get("headless_mode", False)
+        headless=settings.get("headless_mode", False)
     )
 
 if __name__ == '__main__':

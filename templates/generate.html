@@ -46,6 +46,16 @@
         </div>
     </div>
     <script>
+    function fetchLastGeneratedScenarios() {
+        const lastScenarios = localStorage.getItem('last_generated_scenarios');
+        if (lastScenarios) {
+            document.getElementById('scenarios-output').innerHTML = lastScenarios;
+        } else {
+            document.getElementById('scenarios-output').innerText = "No scenarios generated yet.";
+        }
+    }   
+    fetchLastGeneratedScenarios();
+
     // Screenshot display and upload logic
     let screenshots = []; 
 
@@ -206,6 +216,18 @@
         });
     };
 
+    function htmlEncode(str) {
+        const div = document.createElement("div");
+        div.innerText = str;
+        return div.innerHTML;
+    }
+
+    function htmlDecode(str) {
+        const div = document.createElement("div");
+        div.innerHTML = str;
+        return div.innerText;
+    }
+
     // Render scenarios as a styled list
     function renderScenarios(scenarios) {
         const out = document.getElementById('scenarios-output');
@@ -215,13 +237,44 @@
         }
         let html = '';
         scenarios.forEach((sc, idx) => {
-            html += `<div style="margin-bottom:1.2em;padding:1em;background:#f3f4f6;border-radius:0.6em;">
+            html += `<div style="margin-bottom:1.2em;padding:1em;background:#f3f4f6;border-radius:0.6em;display:flex;flex-direction:column;gap:0.5em;">
                 <div style="font-weight:bold;color:#3730a3;font-size:1.08em;">${idx+1}. ${sc.name || ''}</div>
                 <div style="margin:0.5em 0 0.5em 0;white-space:pre-line;">${sc.description || ''}</div>
                 <div style="color:#6366f1;font-size:0.97em;">Tags: ${sc.tags || ''}</div>
+                <div style="display:flex">
+                    <button style="margin-top:0.5em;padding:0.4em 0.8em;background:#6366f1;color:#fff;border:none;border-radius:0.3em;cursor:pointer;"
+                        onclick="copyScenario(htmlEncode('${sc.name}'),htmlEncode('${sc.description}'),htmlEncode('${sc.tags}'));">Copy Scenario</button>
+                </div>
             </div>`;
         });
         out.innerHTML = html;
+
+        // write scenarios variable to local persistant storage
+        localStorage.setItem('last_generated_scenarios', html);
+    }
+
+    function copyScenario(task_name, task_description, tags) {
+        // prepare a data for a post call
+        const data = {
+            task_name: htmlDecode(task_name),
+            task_description: htmlDecode(task_description),
+            tags: htmlDecode(tags)
+        };
+        // make a post call to the server
+        fetch('/copytask', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        }).then(response => {
+            if (response.ok) {
+                alert('Scenario copied successfully!');
+            } else {
+                alert('Failed to copy scenario.');
+            }
+        }).catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while copying the scenario.');
+        });
     }
 
     function saveGenerateState() {
