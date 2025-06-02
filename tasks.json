@@ -240,22 +240,13 @@
         ]
     },
     {
-        "ID": 28,
-        "Task name": "Login with valid credentials",
-        "Task description": "Open the web page using the URL https://opensource-demo.orangehrmlive.com/web/index.php/auth/login. Enter a valid username and password into the respective fields. Click on the login button. Verify that the user is successfully redirected to the dashboard page and that the dashboard elements are visible.",
-        "Tags": [
-            "login",
-            " valid credentials",
-            " dashboard"
-        ]
-    },
-    {
         "ID": 29,
-        "Task name": "Successful Login",
-        "Task description": "Open the web page using URL https://opensource-demo.orangehrmlive.com/web/index.php/auth/login, enter Admin in the Username field, and admin123 in the Password field. Click the Login button and verify that the login is successful and the user is redirected to the dashboard page.",
+        "Task name": "Valid Login",
+        "Task description": "Open your web browser and navigate to https://opensource-demo.orangehrmlive.com/web/index.php/auth/login. Enter 'Admin' in the Username field. Enter 'admin123' in the Password field. Click on the 'Login' button. Verify that the login is successful and user is redirected to the dashboard.",
         "Tags": [
             "login",
-            " successful login"
+            " validation",
+            " success"
         ]
     }
 ]

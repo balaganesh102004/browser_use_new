@@ -679,6 +679,12 @@ a:hover {
     font-size: 1.25em;
     color: #3730a3;
     font-weight: 600;
+    text-shadow:
+        0 0 5px #fff,
+        0 0 10px #fff,
+        0 0 15px #0ff,
+        0 0 20px #0ff,
+        0 0 25px #0ff;
 }
 
 /* --- MODAL BUTTONS --- */

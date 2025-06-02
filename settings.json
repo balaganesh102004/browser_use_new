@@ -13,7 +13,6 @@
         "azure_openai_api_endpoint": "https://cei-aoai.openai.azure.com/openai/deployments/gpt-4o-mini/chat/completions?api-version=2025-01-01-preview",
         "model-name": "gpt-4o-mini"
     },
-    "planner_mode": false,
-    "headless_mode": false,
-    "highlight_elements": true
+    "headless_mode": true,
+    "highlight_elements": false
 }

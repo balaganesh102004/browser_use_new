@@ -155,8 +155,8 @@ def render_report(history_data: dict, all_tasks: any, test_run_id: str = None) -
                 <div>
                     <strong>{task_name}:</strong> {task_description}
                 </div>
-                <div>
-                    <span>Status:</span><span class="status-pill status-{task_status.lower()}">{task_status}</span> | <span>Total Duration: {round(tot_duration, 2)} seconds</span>
+                <div style="white-space: nowrap;">
+                    <span>Status:</span><span class="status-pill status-{task_status.lower()}">{task_status}</span> | <span>Duration: {round(tot_duration, 2)} seconds</span>
                 </div>
             </div>
             <div class="accordion-content" style="display:block;">

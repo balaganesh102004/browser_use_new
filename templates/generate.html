@@ -217,21 +217,11 @@
     };
 
     function htmlEncode(str) {
-        return str
-            .replace(/&/g, '')
-            .replace(/"/g, '')
-            .replace(/'/g, '')
-            .replace(/</g, '')
-            .replace(/>/g, '');
+        return escape(str);
     }
 
     function htmlDecode(str) {
-        return str
-            .replace(/&quot;/g, '')
-            .replace(/&#39;/g, "")
-            .replace(/&lt;/g, '')
-            .replace(/&gt;/g, '')
-            .replace(/&amp;/g, '');
+        return unescape(str);
     }
 
     // Render scenarios as a styled list

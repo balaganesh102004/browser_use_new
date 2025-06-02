@@ -61,6 +61,7 @@ h2 {
     font-size: 1.1rem;
     font-weight: 600;
     display: flex;
+    gap: 2em;
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid #ddd;
