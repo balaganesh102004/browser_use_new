@@ -129,6 +129,26 @@ a:hover {
     box-shadow: 0 0.25em 1em rgba(239,68,68,0.13);
 }
 
+/* Pill Box Status */
+.status-pill {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #fff;
+}
+
+.status-success {
+    background-color: #22c55e; /* Green */
+}
+
+.status-failure {
+    background-color: #ef4444; /* Red */
+}
+
 /* Responsive design */
 @media (max-width: 56.25em) {
     .container {

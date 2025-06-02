@@ -32,7 +32,7 @@
                 {% for run in runs %}
                 <tr id="row-{{ run.id }}">
                     <td>{{ run.id }}</td>
-                    <td>{{ run.status }}</td>
+                    <td><span class="status-pill status-{{ run.status.lower() }}">{{ run.status }}</span></td>
                     <td>{{ run.duration }}</td>
                     <td>{{ run.tokens }}</td>
                     <td>{{ run.start }}</td>

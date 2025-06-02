@@ -284,7 +284,7 @@ function generateTask(taskId) {
                 <div class="loader-content">
                     <img src="${location.origin}/static/Loading.gif" alt="Loading..." class="loader-img">
                     <div id="loader-text" class="loader-text">
-                        Generating task...
+                        Performing the task... Please wait.
                     </div>
                 </div>
             </div>
@@ -343,7 +343,7 @@ window.generateTask = function(buttonElement) {
                 <div class="loader-content">
                     <img src="${location.origin}/static/Loading.gif" alt="Loading..." class="loader-img">
                     <div id="loader-text" class="loader-text">
-                        Generating task...
+                        Performing the task... Please wait.
                     </div>
                 </div>
             </div>
