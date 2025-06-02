@@ -101,6 +101,18 @@ document.addEventListener("DOMContentLoaded", function() {
                             </div>
                         </div>
                     </div>
+                    <h1>Live Logs</h1>
+                    <div id="log"></div>
+
+                    <script>
+                        const logDiv = document.getElementById("log");
+                        const eventSource = new EventSource("/stream");
+
+                        eventSource.onmessage = function(event) {
+                        logDiv.innerHTML += event.data + "<br>";
+                        logDiv.scrollTop = logDiv.scrollHeight;
+                        };
+                    </script>
                 </body>
                 </html>
             `);
@@ -162,6 +174,18 @@ document.addEventListener("DOMContentLoaded", function() {
                             </div>
                         </div>
                     </div>
+                    <h1>Live Logs</h1>
+                    <div id="log"></div>
+
+                    <script>
+                        const logDiv = document.getElementById("log");
+                        const eventSource = new EventSource("/stream");
+
+                        eventSource.onmessage = function(event) {
+                        logDiv.innerHTML += event.data + "<br>";
+                        logDiv.scrollTop = logDiv.scrollHeight;
+                        };
+                    </script>
                 </body>
                 </html>
             `);
@@ -224,6 +248,18 @@ document.addEventListener("DOMContentLoaded", function() {
                             </div>
                         </div>
                     </div>
+                    <h1>Live Logs</h1>
+                    <div id="log"></div>
+
+                    <script>
+                        const logDiv = document.getElementById("log");
+                        const eventSource = new EventSource("/stream");
+
+                        eventSource.onmessage = function(event) {
+                        logDiv.innerHTML += event.data + "<br>";
+                        logDiv.scrollTop = logDiv.scrollHeight;
+                        };
+                    </script>
                 </body>
                 </html>
             `);
@@ -278,6 +314,17 @@ function generateTask(taskId) {
         <head>
             <title>Task Result</title>
             <link rel="stylesheet" href="${location.origin}/static/styles.css">
+            <style>
+                #log {
+                width: 100%;
+                height: 400px;
+                background: #000;
+                color: #0f0;
+                overflow-y: scroll;
+                padding: 10px;
+                font-family: monospace;
+                }
+            </style>
         </head>
         <body>
             <div id="loader-overlay" class="loader-overlay" style="display:flex;">
@@ -288,6 +335,18 @@ function generateTask(taskId) {
                     </div>
                 </div>
             </div>
+            <h1>Live Logs</h1>
+            <div id="log"></div>
+
+            <script>
+                const logDiv = document.getElementById("log");
+                const eventSource = new EventSource("/stream");
+
+                eventSource.onmessage = function(event) {
+                logDiv.innerHTML += event.data + "<br>";
+                logDiv.scrollTop = logDiv.scrollHeight;
+                };
+            </script>
         </body>
         </html>
     `);
@@ -347,6 +406,18 @@ window.generateTask = function(buttonElement) {
                     </div>
                 </div>
             </div>
+            <h1>Live Logs</h1>
+            <div id="log"></div>
+
+            <script>
+                const logDiv = document.getElementById("log");
+                const eventSource = new EventSource("/stream");
+
+                eventSource.onmessage = function(event) {
+                logDiv.innerHTML += event.data + "<br>";
+                logDiv.scrollTop = logDiv.scrollHeight;
+                };
+            </script>
         </body>
         </html>
     `);

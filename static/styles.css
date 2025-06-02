@@ -663,7 +663,7 @@ a:hover {
     top: 0; left: 0; right: 0; bottom: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(255,255,255,0.85);
+    background: rgba(255,255,255,0.3);
     z-index: 2000;
     display: flex;
     align-items: center;
@@ -673,8 +673,7 @@ a:hover {
     text-align: center;
 }
 .loader-img {
-    width: 20em;
-    margin-bottom: 1em;
+    width: 100px;
 }
 .loader-text {
     font-size: 1.25em;

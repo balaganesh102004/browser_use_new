@@ -17,7 +17,9 @@ from datetime import datetime
 from flask import abort
 import base64
 import re
-
+import time
+import queue
+import logging
 
 load_dotenv()
 
@@ -275,6 +277,8 @@ async def run_tasks_concurrently(task_descriptions):
 @app.route('/run', methods=['POST'])
 def run():
     global history_data
+    global all_tasks
+
     all_tasks = load_tasks()
     selected_task_names = request.form.getlist('tasks[]')
     selected_descriptions = [
@@ -282,7 +286,6 @@ def run():
         for task in all_tasks
         if task["Task name"] in selected_task_names
     ]
-    print("Selected task names:", selected_task_names)
     # Run the agent on descriptions in a fresh thread/event loop
     raw_results = run_async_in_thread(run_tasks_concurrently(selected_descriptions))
     history_data = {
@@ -297,7 +300,7 @@ def run():
     filename = f"test_run_{timestamp}_{test_run_id}.html"
 
     # Pass test_run_id to the report
-    html_report = render_report(history_data, test_run_id=test_run_id)
+    html_report = render_report(history_data, all_tasks, test_run_id)
 
     # Save the report to the History folder
     history_folder = os.path.join(os.path.dirname(__file__), "History")
@@ -716,5 +719,48 @@ def get_browser_profile():
         headless=settings.get("headless_mode", False)
     )
 
+# Thread-safe queue for logs
+log_queue = queue.Queue()
+
+class LogTextHandler(logging.Handler):
+    """Custom logging handler to append logs to QTextEdit and store in database."""
+    def __init__(self):
+        super().__init__()
+        # Regex to detect common timestamp formats
+        self.timestamp_pattern = re.compile(
+            r'(\[\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:,\d+)?(?:\s*[+-]\d{4})?\]|'
+            r'\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:,\d+)?(?:\s*[+-]\d{4})?|'
+            r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:,\d+)?(?:Z|[+-]\d{2}:\d{2})?)'
+        )
+
+    def emit(self, record):
+        msg = record.getMessage()
+        # Check if message contains a timestamp
+        has_timestamp = bool(self.timestamp_pattern.search(msg))
+        if has_timestamp:
+            # Use the raw message as-is
+            formatted_msg = msg
+        else:
+            # Apply full formatter with timestamp and level
+            formatted_msg = self.format(record)
+        
+        log_queue.put(formatted_msg)
+
+# Set up logging handler
+logger = logging.getLogger('browser_use')
+logger.setLevel(logging.INFO)
+log_handler = LogTextHandler()
+formatter = logging.Formatter('[%(asctime)s] [%(levelname)s] %(message)s')
+log_handler.setFormatter(formatter)
+logger.addHandler(log_handler)
+
+@app.route('/stream')
+def stream():
+    def event_stream():
+        while True:
+            message = log_queue.get()  # waits until log is available
+            yield f"data: {message}\n\n"
+    return Response(event_stream(), mimetype='text/event-stream')
+
 if __name__ == '__main__':
-    app.run(debug=True, use_reloader=True)
+    app.run(debug=True, use_reloader=True, threaded=True)

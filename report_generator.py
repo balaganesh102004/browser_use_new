@@ -1,7 +1,13 @@
 import json
 from datetime import datetime
 
-def render_report(history_data: dict, test_run_id: str = None) -> str:
+def get_task_description(task_name, all_tasks):
+    for task in all_tasks:
+        if task["Task name"].lower() == task_name.lower():
+            return task["Task description"]
+    return "Task not found"
+
+def render_report(history_data: dict, all_tasks: any, test_run_id: str = None) -> str:
     report_content = """
     <!DOCTYPE html>
     <html>
@@ -141,15 +147,16 @@ def render_report(history_data: dict, test_run_id: str = None) -> str:
             end = metadata.get("step_end_time", 0)
             tot_duration += round(end - start, 2)
 
+        task_description = get_task_description(task_name, all_tasks)
         # Add accordion for the task
         report_content += f"""
         <div class="{accordion_class}">
             <div class="accordion-header" onclick="toggleAccordion(this)">
                 <div>
-                    <strong>Test Scenario:</strong> {task_name}
+                    <strong>{task_name}:</strong> {task_description}
                 </div>
                 <div>
-                    <span>Status: {task_status}</span> | <span>Total Duration: {round(tot_duration, 2)} seconds</span>
+                    <span>Status:</span><span class="status-pill status-{task_status.lower()}">{task_status}</span> | <span>Total Duration: {round(tot_duration, 2)} seconds</span>
                 </div>
             </div>
             <div class="accordion-content" style="display:block;">
