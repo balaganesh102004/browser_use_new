@@ -845,4 +845,8 @@ a:hover {
         border-bottom-left-radius: 1.2rem;
         border-bottom-right-radius: 1.2rem;
     }
+
+    .dashboard_nav {
+        text-decoration: none;
+    }
 }

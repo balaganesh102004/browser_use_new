@@ -102,7 +102,7 @@ def render_report(history_data: dict, test_run_id: str = None) -> str:
         </div>
         <div class="summary-field">
             <span class="summary-label">Status:</span>
-            <span class="status-pill">{overall_status}</span>
+            <span class="status-pill status-{overall_status.lower()}">{overall_status}</span>
         </div>
         <div class="summary-field">
             <span class="summary-label">Total Duration:</span>

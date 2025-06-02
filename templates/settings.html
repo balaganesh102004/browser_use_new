@@ -53,6 +53,13 @@
                         </svg>
                         Planner LLM Settings
                     </div>
+                    <div class="toggle-switch">
+                        <label class="switch">
+                            <input type="checkbox" id="planner_mode" name="planner_mode" value="false" {% if settings.planner_mode %}checked{% endif %}>
+                            <span class="slider"></span>
+                        </label>
+                        <label for="planner_mode">Use Planner</label>
+                    </div>
                     <div class="field-group">
                         <label for="planner-llm">Planner LLM</label>
                         <select id="planner-llm" name="planner_llm" required>

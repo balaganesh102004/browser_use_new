@@ -247,10 +247,20 @@ async def run_task_async(task):
     agent = Agent(
         task=task,
         llm=llm,
-        planner_llm=planner_llm_instance,
-        override_system_message=override_system_prompt,
+        # planner_llm=planner_llm_instance,
+        # override_system_message=override_system_prompt,
         browser_profile=get_browser_profile(),
     )
+
+    usePlanner = settings.get("planner_mode", False)
+    if (usePlanner == True):
+        agent = Agent(
+            task=task,
+            llm=llm,
+            planner_llm=planner_llm_instance,
+            browser_profile=get_browser_profile(),
+        )
+
     try:
         history = await agent.run(max_steps=10)
         return history.model_dump()
@@ -462,7 +472,7 @@ def api_fetch_screenshot():
     try:
         llm = get_agent_llm()
         agent = Agent(task=f"go to {url} wait until the page is fully loaded and the <body> element is visible, wait for all network requests to finish, then take a screenshot of the full page", llm=llm, browser_profile=browser_config)
-        history = asyncio.run(agent.run())
+        history = asyncio.run(agent.run(max_steps=2))
         screenshots = []
         print("history type:", type(history))
         print("history:", history)
@@ -596,7 +606,6 @@ def api_generate_scenarios():
                 json_match = re.search(r'\{[\s\S]*\}', response.content)
                 if json_match:
                     scenarios_data = json.loads(json_match.group(0))
-                    print("Scenarios data:", scenarios_data)
                     scenarios.extend(scenarios_data.get("scenarios", []))
             except Exception as e:
                 return jsonify({'error': str(e)}), 500

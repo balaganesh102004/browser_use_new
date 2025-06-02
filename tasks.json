@@ -224,7 +224,7 @@
     {
         "ID": 26,
         "Task name": "Adding phone to the cart.",
-        "Task description": "Go to https://www.flipkart.com. Search for Samsung Galaxy S23 ultra. From the search results, identify a listing for the Samsung Galaxy S23 that is in stock and available for purchase. Click on the product to open its detail page. Confirm it is not sold out. ",
+        "Task description": "Go to https://www.flipkart.com. Search for Samsung Galaxy S23 ultra. From the search results, identify a listing for the Samsung Galaxy S23 that is in stock and available for purchase. Confirm it is not sold out. ",
         "Tags": [
             "Flipkart",
             "Shopping"
@@ -247,6 +247,15 @@
             "login",
             " valid credentials",
             " dashboard"
+        ]
+    },
+    {
+        "ID": 29,
+        "Task name": "Successful Login",
+        "Task description": "Open the web page using URL https://opensource-demo.orangehrmlive.com/web/index.php/auth/login, enter Admin in the Username field, and admin123 in the Password field. Click the Login button and verify that the login is successful and the user is redirected to the dashboard page.",
+        "Tags": [
+            "login",
+            " successful login"
         ]
     }
 ]

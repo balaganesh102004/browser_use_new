@@ -242,7 +242,7 @@ body {
         background-color: rgba(0, 0, 0, 0.8);
     }
     .modal-content {
-        margin: 10% auto;
+        margin: 1% auto;
         display: block;
         max-width: 80%;
         max-height: 80%;
