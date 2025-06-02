@@ -25,6 +25,17 @@
         </div>
 
         <div class="actions-bar">
+            <div class="dashboard">
+                <div class="dashboard-card" >
+                    <h2>Total Tasks</h2>
+                    <div>{{ tasks_count }}</div>
+                </div>
+
+                <div class="dashboard-card">
+                    <h2>Total Runs</h2>
+                    <div>{{ history_count }}</div>
+                </div>
+            </div>
             <input type="text" id="task-search" placeholder="Search tasks, description and tags...">
             <div class="actions-left">
                 <span id="selected-count" class="selected-count">Tasks Selected: 0</span>

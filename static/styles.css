@@ -812,3 +812,37 @@ a:hover {
 .task-card p .tag-pill:nth-child(9)  { background: #f43f5e; }
 .task-card p .tag-pill:nth-child(10) { background: #7c3aed; }
 
+.dashboard {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+}
+
+.dashboard-card {
+    background-color: #e0e7ff;
+    border: 1.5px solid #e5e7eb;
+    min-width: 10rem;
+    border-radius: 1.2rem;
+    box-shadow: 0 2px 12px rgba(60,72,88,0.07);
+    transition: box-shadow 0.18s, border-color 0.18s, transform 0.16s;
+
+    h2 {
+        font-size: 1.2rem;
+        color: #3730a3;
+        text-align: center;
+        margin: 0;
+        padding: 5px 10px 0px 10px;
+    }
+
+    div {
+        font-size: 1.4rem;
+        background: lightgrey;
+        color: #374151;
+        line-height: 1.6;
+        margin: 0.5rem 0 0 0;
+        text-align: center;
+        /* border radius only bottom left and bottom right */
+        border-bottom-left-radius: 1.2rem;
+        border-bottom-right-radius: 1.2rem;
+    }
+}

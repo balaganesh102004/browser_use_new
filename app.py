@@ -30,6 +30,9 @@ browser_config = BrowserProfile(
     user_data_dir=None,
 )
 
+def count_files_in_folder(folder_path):
+    return len([f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))])
+
 def load_tasks():
     if not os.path.exists(DATA_FILE):
         return []
@@ -46,7 +49,10 @@ def get_next_id(tasks):
 @app.route('/')
 def index():
     tasks = load_tasks()
-    return render_template('index.html', tasks=tasks)
+    tasks_count = len(tasks)
+    history_folder = os.path.join(os.path.dirname(__file__), "history")
+    history_count = count_files_in_folder(history_folder)
+    return render_template('index.html', tasks=tasks, tasks_count=tasks_count, history_count=history_count)
 
 @app.route('/copytask', methods=['POST'])
 def copy_task():
