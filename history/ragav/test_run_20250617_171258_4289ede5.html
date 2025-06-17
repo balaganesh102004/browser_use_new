@@ -1,0 +1,97 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Test Run Report</title>
+        <link rel="stylesheet" type="text/css" href="/static/test_result.css">
+        <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const headers = document.querySelectorAll(".accordion-header");
+            headers.forEach(header => {
+                header.addEventListener("click", function () {
+                    const content = this.nextElementSibling;
+                    content.style.display = content.style.display === "block" ? "none" : "block";
+                });
+            });
+
+            const modal = document.getElementById("screenshotModal");
+            const modalImg = document.getElementById("modalImage");
+            const closeModal = document.getElementsByClassName("close")[0];
+
+            document.querySelectorAll(".screenshot").forEach(img => {
+                img.addEventListener("click", function () {
+                    modal.style.display = "block";
+                    modalImg.src = this.src;
+                });
+            });
+
+            closeModal.onclick = function () {
+                modal.style.display = "none";
+            };
+
+            window.onclick = function (event) {
+                if (event.target === modal) {
+                    modal.style.display = "none";
+                }
+            };
+        });
+        </script>
+    </head>
+    <body class="report-body">
+    
+        <h1 class="summary-title">Test Run Report</h1>
+        <!-- Modal for screenshots -->
+        <div id="screenshotModal" class="modal">
+            <span class="close">&times;</span>
+            <img id="modalImage" class="modal-content">
+        </div>
+    <div class="summary">
+        <div class="summary-field">
+            <span class="summary-label">Test Run ID:</span>
+            <span class="summary-value">4289ede5</span>
+        </div>
+        <div class="summary-field">
+            <span class="summary-label">Status:</span>
+            <span class="status-pill status-failure">Failure</span>
+        </div>
+        <div class="summary-field">
+            <span class="summary-label">Total Duration:</span>
+            <span class="summary-value">0 seconds</span>
+        </div>
+        <div class="summary-field">
+            <span class="summary-label">Total Tokens:</span>
+            <span class="summary-value">0</span>
+        </div>
+        <div class="summary-field">
+            <span class="summary-label">Start Time:</span>
+            <span class="summary-value">N/A</span>
+        </div>
+        <div class="summary-field">
+            <span class="summary-label">End Time:</span>
+            <span class="summary-value">N/A</span>
+        </div>
+    </div>
+    
+        <div class="accordion">
+            <div class="accordion-header" onclick="toggleAccordion(this)">
+                <div>
+                    <strong>Read PyPI Package Version:</strong> Open https://pypi.org/project/requests/ and read the version number displayed next to the package title.
+                </div>
+                <div style="white-space: nowrap;">
+                    <span>Status:</span><span class="status-pill status-failure">Failure</span> | <span>Duration: 0 seconds</span>
+                </div>
+            </div>
+            <div class="accordion-content" style="display:block;">
+        
+        <table>
+            <tr>
+                <th>Step</th>
+                <th>Description</th>
+                <th>Expected Result</th>
+                <th>Actual Result</th>
+                <th>Step Result</th>
+                <th>Input Tokens</th>
+                <th>Screenshot</th>
+                <th>Action</th>
+            </tr>
+        </table></div></div></body></html>

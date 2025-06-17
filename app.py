@@ -1,75 +1,157 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, render_template, request, Response, send_file, send_from_directory
-import json
-import os
 import asyncio
-import threading
-from browser_use import Agent 
-from browser_use.browser import BrowserProfile
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_openai import AzureChatOpenAI
-from pydantic import SecretStr
-from dotenv import load_dotenv
-from langchain_core.messages import HumanMessage, SystemMessage
-from report_generator import render_report 
-import io
-import uuid
-from datetime import datetime
-from flask import abort
-import base64
-import re
-import time
+import subprocess
 import queue
 import logging
-
-load_dotenv()
+import re
+from browser_use import Agent
+from flask import Flask, render_template, request, redirect, send_file, send_from_directory, url_for, jsonify, Response, session
+import os
+import uuid
+from datetime import datetime
+import json
+import hashlib
+from functools import wraps
+from task_manager import load_tasks, save_tasks, get_next_id, count_files_in_folder
+from container_manager import allocate_container_to_user,release_container_for_user,start_container
+from task_executor import get_llm
+from report_generator import render_report
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24)
+
 DATA_FILE = 'tasks.json'
-SETTINGS_FILE = 'settings.json'
+SCREENSHOTS_FOLDER = os.path.join(os.getcwd(), 'screenshots')
+os.makedirs(SCREENSHOTS_FOLDER, exist_ok=True)
 
-browser_config = BrowserProfile(
-    highlight_elements = False,
-    user_data_dir=None,
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler("execution_logs.txt", mode="w")
+    ]
 )
+logger = logging.getLogger('browser_use')
+logger.setLevel(logging.INFO)
 
-def count_files_in_folder(folder_path):
-    return len([f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))])
+# Thread-safe queue for logs
+log_queue = queue.Queue()
 
-def load_tasks():
-    if not os.path.exists(DATA_FILE):
-        return []
-    with open(DATA_FILE, 'r') as f:
-        return json.load(f)
+class LogTextHandler(logging.Handler):
+    def __init__(self):
+        super().__init__()
+        self.timestamp_pattern = re.compile(
+            r'(\[\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:,\d+)?(?:\s*[+-]\d{4})?\]|'
+            r'\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:,\d+)?(?:\s*[+-]\d{4})?|'
+            r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:,\d+)?(?:Z|[+-]\d{2}:\d{2})?)'
+        )
 
-def save_tasks(tasks):
-    with open(DATA_FILE, 'w') as f:
-        json.dump(tasks, f, indent=4)
+    def emit(self, record):
+        msg = record.getMessage()
+        has_timestamp = bool(self.timestamp_pattern.search(msg))
+        if has_timestamp:
+            formatted_msg = msg
+        else:
+            formatted_msg = self.format(record)
+        log_queue.put(formatted_msg)
 
-def get_next_id(tasks):
-    return max([task["ID"] for task in tasks], default=0) + 1
+# Set up logging handler
+logger = logging.getLogger('browser_use')
+logger.setLevel(logging.INFO)
+log_handler = LogTextHandler()
+formatter = logging.Formatter('[%(asctime)s] [%(levelname)s] %(message)s')
+log_handler.setFormatter(formatter)
+logger.addHandler(log_handler)
 
+# --- Authentication helpers ---
+USERS_FILE = 'users.json'
+
+def save_user(username, password_hash):
+    if os.path.exists(USERS_FILE):
+        with open(USERS_FILE, 'r+', encoding='utf-8') as f:
+            users = json.load(f)
+            if username in users:
+                return False  # User already exists
+            users[username] = password_hash
+            f.seek(0)
+            json.dump(users, f, ensure_ascii=False, indent=4)
+    else:
+        with open(USERS_FILE, 'w', encoding='utf-8') as f:
+            json.dump({username: password_hash}, f, ensure_ascii=False, indent=4)
+    return True
+
+def get_user_id(username):
+    if os.path.exists(USERS_FILE):
+        with open(USERS_FILE, 'r', encoding='utf-8') as f:
+            users = json.load(f)
+            if username in users:
+                return list(users.keys()).index(username) + 1
+    return None
+
+def check_user(username, password_hash):
+    if os.path.exists(USERS_FILE):
+        with open(USERS_FILE, 'r', encoding='utf-8') as f:
+            users = json.load(f)
+            if username in users and users[username] == password_hash:
+                return True
+    return False
+
+# --- Authentication routes ---
+@app.route('/login', methods=['GET'])
+def login():
+    return render_template('login.html')
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/auth', methods=['POST'])
+def auth():
+    data = request.json
+    username = data.get("username")
+    password = data.get("password")
+    password_hash = hashlib.sha256(password.encode()).hexdigest()
+
+    # Load users
+    users = {}
+    if os.path.exists(USERS_FILE):
+        with open(USERS_FILE, 'r', encoding='utf-8') as f:
+            try:
+                users = json.load(f)
+            except Exception:
+                users = {}
+
+    # Signup
+    if username not in users:
+        users[username] = password_hash
+        with open(USERS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(users, f, ensure_ascii=False, indent=4)
+    elif users[username] != password_hash:
+        return jsonify({"status": "fail", "message": "Invalid credentials"})
+
+    # Both signup and login: assign user_id and container
+    user_id = list(users.keys()).index(username) + 1
+    session['user_id'] = user_id
+    session['username'] = username
+    return jsonify({"status": "success", "user_id": user_id, "message": "Login/Signup successful"})
+
+# --- Task CRUD routes ---
 @app.route('/')
+@login_required
 def index():
+    username = session.get('username')  # Get the username from the session
+
     tasks = load_tasks()
     tasks_count = len(tasks)
-    history_folder = os.path.join(os.path.dirname(__file__), "history")
+    history_folder = os.path.join(os.path.dirname(__file__), "history", username)
+    os.makedirs(history_folder, exist_ok=True)  # Ensure the folder exists
     history_count = count_files_in_folder(history_folder)
     return render_template('index.html', tasks=tasks, tasks_count=tasks_count, history_count=history_count)
-
-@app.route('/copytask', methods=['POST'])
-def copy_task():
-    # get the values json request
-    data = request.get_json()
-    tasks = load_tasks()
-    new_task = {
-        "ID": get_next_id(tasks),
-        "Task name": data['task_name'],
-        "Task description": data['task_description'],
-        "Tags": data['tags'].split(',')
-    }
-    tasks.append(new_task)
-    save_tasks(tasks)
-    return ''
 
 @app.route('/add', methods=['POST'])
 def add_task():
@@ -103,225 +185,97 @@ def delete_task(task_id):
     save_tasks(tasks)
     return redirect(url_for('index'))
 
-
-def run_async_in_thread(coro):
-    result = {}
-    exception = {}
-
-    def runner():
-        try:
-            result['value'] = asyncio.run(coro)
-        except Exception as e:
-            exception['error'] = e
-
-    thread = threading.Thread(target=runner)
-    thread.start()
-    thread.join()
-
-    if 'error' in exception:
-        raise exception['error']
-
-    return result['value']
-
-override_system_prompt = """
-You are an expert in intelligent web automation. Your primary goal is to ensure reliable, human-like interactions with web interfaces by intelligently adapting to page structure and dynamics. Follow the directives below for robust and accurate automation:
-
-1. Scrolling & Viewport Handling:
-   - Detect and interact with scrollable containers (including nested ones).
-   - Scroll to bring elements into view before interacting.
-   - Support infinite scrolling: keep loading until the end is detected.
-   - Use bounding box checks or visibility APIs to ensure elements are visible and unobstructed.
-
-2. Element Interaction Strategy:
-   - **Clickable Elements**: Wait until clickable (e.g., buttons, links, icons) and interact only when enabled.
-   - **Hover Interactions**: Simulate hover when required to reveal hidden menus/tooltips.
-   - **Sliders/Range Inputs**: Adjust to required value with appropriate drag or key events.
-   - **Modals & Popups**: Detect presence and interact with visible modal content. Handle close/cancel/submit.
-   - Handle dynamic content loading: wait for transitions, AJAX/XHR completions, or DOM mutations.
-
-3. Forms, Inputs & Field Automation:
-   - Fill text fields sequentially based on visible field order or label proximity.
-   - Respect field dependencies (e.g., field B enabled only after filling A).
-   - Handle autocomplete/dropdowns by simulating typing and selecting suggestions.
-
-4. Option & Selection Handling:
-   - **Dropdowns**: 
-     - Expand the menu, retrieve all available (non-disabled) options.
-     - Select the top available option unless a specific one is required.
-     - Confirm selection by checking the visible label/value of the dropdown post-selection.
-   - **Checkboxes**:
-     - Verify current state before toggling to avoid unnecessary clicks.
-     - Check the checkbox if it's not already checked, only when required.
-     - Support bulk selection when checkboxes are in lists.
-   - **Radio Buttons**:
-     - Ensure the correct group is targeted.
-     - Select the specified or default (first enabled) radio option.
-     - Validate the selection state by checking the group afterward.
-
-5. File Upload & Attachments:
-   - Detect file input fields (visible or hidden).
-   - Upload files using simulated file chooser input, waiting for processing (e.g., thumbnails or filenames).
-
-6. Navigation & Process Flow:
-   - Handle multi-step workflows by validating each stage before proceeding.
-   - Detect and wait for loading states (spinners, skeleton loaders, etc.) to finish.
-   - Always confirm actions by checking for success, confirmation, or error messages.
-   
-7. Robustness & Safety:
-   - Never assume presence of elements — use timeouts, retries, and fallbacks.
-   - Interact only when elements are enabled, visible, and stable (no animations in progress).
-   - Use semantic cues (ARIA labels, roles, visible text) for locating and confirming actions when possible.
-   - Log interactions and decisions for traceability and debugging.
-
-Your automation must behave as a careful, context-aware user would, ensuring all interactions are validated and errors are gracefully handled.
-"""
-
-async def run_task_async(task):
-    settings = load_settings()
-    agent_llm = settings.get("agent_llm", "gemini")
-    agent_llm_args = settings.get("agent_llm_args", {})
-    planner_llm = settings.get("planner_llm", "gemini")
-    planner_llm_args = settings.get("planner_llm_args", {})
-
-    # Default model names if not set
-    agent_model = agent_llm_args.get("model-name", "gemini-2.0-flash-exp")
-    planner_model = planner_llm_args.get("model-name", "gemini-2.0-flash-exp")
-
-    # Choose LLM based on settings
-    if agent_llm == "gemini":
-        llm = ChatGoogleGenerativeAI(
-            model=agent_model,
-            api_key=SecretStr(agent_llm_args.get("gemini_api_key", os.getenv('GEMINI_API_KEY'))),
-            temperature=0.2,
-            seed=42
-        )
-    elif agent_llm == "azure_openai":
-        llm = AzureChatOpenAI(
-            model=agent_model,
-            api_version=agent_llm_args.get("azure_openai_api_version", os.getenv('AZURE_OPENAI_API_VERSION')),
-            azure_endpoint=agent_llm_args.get("azure_openai_api_endpoint", os.getenv('AZURE_OPENAI_API_ENDPOINT')),
-            api_key=SecretStr(agent_llm_args.get("azure_openai_api_key", os.getenv('AZURE_OPENAI_API_KEY')))
-        )
-    elif agent_llm == "openai":
-        from langchain_openai import ChatOpenAI
-        llm = ChatOpenAI(
-            model=agent_model,
-            api_key=SecretStr(agent_llm_args.get("openai_api_key", os.getenv('OPENAI_API_KEY')))
-        )
-    elif agent_llm == "ollama":
-        from langchain_community.chat_models import ChatOllama
-        llm = ChatOllama(
-            model=agent_model,
-            base_url=agent_llm_args.get("ollama_host", "http://localhost:11434")
-        )
-    else:
-        raise ValueError(f"Unsupported agent_llm: {agent_llm}")
-
-    if planner_llm == "azure_openai":
-        planner_llm_instance = AzureChatOpenAI(
-            model=planner_model,
-            api_version=planner_llm_args.get("azure_openai_api_version", os.getenv('AZURE_OPENAI_API_VERSION')),
-            azure_endpoint=planner_llm_args.get("azure_openai_api_endpoint", os.getenv('AZURE_OPENAI_API_ENDPOINT')),
-            api_key=SecretStr(planner_llm_args.get("azure_openai_api_key", os.getenv('AZURE_OPENAI_API_KEY')))
-        )
-    elif planner_llm == "gemini":
-        planner_llm_instance = ChatGoogleGenerativeAI(
-            model=planner_model,
-            api_key=SecretStr(planner_llm_args.get("gemini_api_key", os.getenv('GEMINI_API_KEY'))),
-            temperature=0.2,
-            seed=42
-        )
-    elif planner_llm == "openai":
-        from langchain_openai import ChatOpenAI
-        planner_llm_instance = ChatOpenAI(
-            model=planner_model,
-            api_key=SecretStr(planner_llm_args.get("openai_api_key", os.getenv('OPENAI_API_KEY')))
-        )
-    elif planner_llm == "ollama":
-        from langchain_community.chat_models import ChatOllama
-        planner_llm_instance = ChatOllama(
-            model=planner_model,
-            base_url=planner_llm_args.get("ollama_host", "http://localhost:11434")
-        )
-    else:
-        planner_llm_instance = llm  # fallback
-
-    agent = Agent(
-        task=task,
-        llm=llm,
-        # planner_llm=planner_llm_instance,
-        # override_system_message=override_system_prompt,
-        browser_profile=get_browser_profile(),
-    )
-
-    usePlanner = settings.get("planner_mode", False)
-    if (usePlanner == True):
-        agent = Agent(
-            task=task,
-            llm=llm,
-            planner_llm=planner_llm_instance,
-            browser_profile=get_browser_profile(),
-        )
-
-    try:
-        history = await agent.run(max_steps=10)
-        return history.model_dump()
-    finally:
-        if hasattr(agent, "close"):
-            await agent.close()
-
-async def run_tasks_concurrently(task_descriptions):
-    coros = [run_task_async(description) for description in task_descriptions]
-    return await asyncio.gather(*coros)
-
+# --- Task execution and reporting ---
 @app.route('/run', methods=['POST'])
+@login_required
 def run():
-    global history_data
-    global all_tasks
-
-    all_tasks = load_tasks()
-    selected_task_names = request.form.getlist('tasks[]')
-    selected_descriptions = [
-        task["Task description"]
-        for task in all_tasks
-        if task["Task name"] in selected_task_names
-    ]
-    # Run the agent on descriptions in a fresh thread/event loop
-    raw_results = run_async_in_thread(run_tasks_concurrently(selected_descriptions))
-    history_data = {
-        name: result
-        for name, result in zip(selected_task_names, raw_results)
-    }
-
-    # Generate a unique test run ID and timestamps
+    username = session.get('username')
     test_run_id = str(uuid.uuid4())[:8]
     now = datetime.now()
     timestamp = now.strftime('%Y%m%d_%H%M%S')
-    filename = f"test_run_{timestamp}_{test_run_id}.html"
+    all_tasks = load_tasks()
 
-    # Pass test_run_id to the report
-    html_report = render_report(history_data, all_tasks, test_run_id)
+    selected_task_names = request.form.getlist('tasks[]')
+    selected_tasks = [task for task in all_tasks if task["Task name"] in selected_task_names]
+    selected_descriptions = [task["Task description"] for task in selected_tasks]
 
-    # Save the report to the History folder
-    history_folder = os.path.join(os.path.dirname(__file__), "History")
-    os.makedirs(history_folder, exist_ok=True)
-    with open(os.path.join(history_folder, filename), "w", encoding="utf-8") as f:
-        f.write(html_report)
+    container_name = allocate_container_to_user(username)
+    try:
+        if container_name is None:
+            return "All containers are busy. You're in the queue. Please wait..."
+        else:
+            task_args = " ".join(f'"{desc}"' for desc in selected_descriptions)
+            cmd = [
+                "podman", "exec", container_name,
+                "bash", "-c",
+                f"DISPLAY=:99 Xvfb :99 -screen 0 1920x1080x24 & python agent_runner.py {task_args}"
+            ]
+
+            print(f"Running tasks in container {container_name} with descriptions: {selected_descriptions}")
+
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding="utf-8"
+            )
+        output_lines = []
+        log_lines = []
+
+        for line in process.stdout:
+            print(line, end='')  # Terminal
+            log_queue.put(line.rstrip())  # For live streaming
+            log_lines.append(line.rstrip())  # For log file
+            output_lines.append(line.rstrip())  # For result extraction
+        process.wait()
+
+        # Remove empty lines
+        output_lines = [l for l in output_lines if l.strip()]
+        if output_lines:
+            agent_json_line = output_lines[-1]
+            log_lines_only = output_lines[:-1]
+        else:
+            agent_json_line = ''
+            log_lines_only = output_lines
+
+        history_folder = os.path.join(os.path.dirname(__file__), "history", username)
+        os.makedirs(history_folder, exist_ok=True)
+
+        log_filename = f"test_run_{timestamp}_{test_run_id}_log.txt"
+        with open(os.path.join(history_folder, log_filename), "w", encoding="utf-8") as f:
+            f.write('\n'.join(log_lines_only))
+
+        try:
+            raw_results = json.loads(agent_json_line)
+        except Exception as e:
+            print("Error parsing agent_runner output:", e)
+            raw_results = [agent_json_line for _ in selected_descriptions]
+        
+        with open(os.path.join(history_folder, "history_only.json"), "w", encoding="utf-8") as f:
+            json.dump(raw_results, f, indent=4)
+
+        history_data = {
+            name: output
+            for name, output in zip(selected_task_names, raw_results)
+        }
+
+        # Save the HTML report as before
+        html_filename = f"test_run_{timestamp}_{test_run_id}.html"
+        html_report = render_report(history_data, test_run_id=test_run_id, all_tasks=all_tasks)
+
+        with open(os.path.join(history_folder, html_filename), "w", encoding="utf-8") as f:
+            f.write(html_report)
+    finally:
+        release_container_for_user(username)
 
     return Response(html_report, mimetype='text/html')
 
-@app.route('/generate_tasks', methods=['POST'])
-def generate_tasks():
-    data = request.get_json()
-    task_ids = data.get('task_ids', [])
-    tasks = load_tasks()
-    selected_descriptions = [task["Task description"] for task in tasks if task["ID"] in task_ids]
-    results = run_async_in_thread(run_tasks_concurrently(selected_descriptions))
-    return jsonify(results)
-
 @app.route('/history')
+@login_required
 def history():
-    history_folder = os.path.join(os.path.dirname(__file__), "History")
+    username = session.get('username')
+    history_folder = os.path.join(os.path.dirname(__file__), "history", username)
     runs = []
     if os.path.exists(history_folder):
         for fname in sorted(os.listdir(history_folder), reverse=True):
@@ -330,18 +284,8 @@ def history():
                     content = f.read()
                     def extract(field):
                         import re
-                        pattern = rf'<span[^>]*>\s*{re.escape(field)}:\s*</span>\s*<span[^>]*>(.*?)</span>'
-                        m = re.search(pattern, content, re.IGNORECASE | re.DOTALL)
-                        if m:
-                            return m.group(1).strip()
-                        
-                        if field.lower() == "status":
-                            pattern = rf'<span[^>]*class="status-pill"[^>]*>(.*?)</span>'
-                            match = re.search(pattern, content, re.IGNORECASE | re.DOTALL)
-                            if match:
-                                return match.group(1).strip()
-                        return 'N/A'
-
+                        m = re.search(rf'<strong>{field}:</strong>\s*([^<]+)', content)
+                        return m.group(1).strip() if m else "N/A"
                     runs.append({
                         "id": extract("Test Run ID"),
                         "file": fname,
@@ -354,8 +298,10 @@ def history():
     return render_template("history.html", runs=runs)
 
 @app.route('/history/<filename>')
+@login_required
 def history_report(filename):
-    history_folder = os.path.join(os.path.dirname(__file__), "History")
+    username = session.get('username')
+    history_folder = os.path.join(os.path.dirname(__file__), "history", username)
     return send_file(os.path.join(history_folder, filename))
 
 @app.route('/history/delete/<filename>', methods=['POST'])
@@ -367,7 +313,7 @@ def delete_history(filename):
         return jsonify({"success": True})
     return jsonify({"success": False, "error": "File not found"}), 404
 
-
+SETTINGS_FILE = 'settings.json'
 def load_settings():
     if not os.path.exists(SETTINGS_FILE):
         # Default settings
@@ -434,70 +380,23 @@ def generate():
 SCREENSHOTS_FOLDER = os.path.join(os.getcwd(), 'screenshots')
 os.makedirs(SCREENSHOTS_FOLDER, exist_ok=True)
 
-def fix_base64_padding(b64_string):
-    return b64_string + '=' * (-len(b64_string) % 4)
-
-def save_base64_image(base64_str, output_dir="./screenshots/"):
-    # Extract header if present
-    match = re.match(r'data:image/(?P<ext>[^;]+);base64,(?P<data>.+)', base64_str)
-    if not match:
-        raise ValueError("Invalid base64 image string")
-
-    ext = match.group('ext')  # e.g., png, jpeg, jpg, gif
-    data = match.group('data')
-
-    # Fix padding
-    data += '=' * (-len(data) % 4)
-
-    # Generate a unique filename
-    filename = f'screenshot_{uuid.uuid4().hex[:8]}.{ext}'
-    filepath = os.path.join(output_dir, filename)
-
-    # Decode and write the image
-    with open(filepath, "wb") as f:
-        f.write(base64.b64decode(data))
-
-    return filename
-
-@app.route('/api/upload_screenshot', methods=['POST'])
-def api_upload_screenshot():
-    screenshot = request.json.get('fileData')
-    if screenshot and len(screenshot) > 0:
-        filename = save_base64_image(fix_base64_padding(screenshot), SCREENSHOTS_FOLDER)
-        return jsonify({'screenshot': f'/screenshots/{filename}'})
-    return jsonify({'error': 'No screenshot found'}), 404
-
 @app.route('/api/fetch_screenshot', methods=['POST'])
 def api_fetch_screenshot():
     url = request.json.get('url')
     if not url:
         return jsonify({'error': 'No URL provided'}), 400
     try:
-        llm = get_agent_llm()
-        agent = Agent(task=f"go to {url} wait until the page is fully loaded and the <body> element is visible, wait for all network requests to finish, then take a screenshot of the full page", llm=llm, browser_profile=browser_config)
-        history = asyncio.run(agent.run(max_steps=2))
-        screenshots = []
-        print("history type:", type(history))
-        print("history:", history)
-        if hasattr(history, 'screenshots'):
-            screenshots = history.screenshots()
-        elif isinstance(history, dict) and 'screenshots' in history:
-            screenshots = history['screenshots']
-        print("screenshots:", screenshots)
-        if screenshots and len(screenshots) > 0:
-            filename = f'screenshot_{uuid.uuid4().hex[:8]}.png'
-            screenshot_path = os.path.join(SCREENSHOTS_FOLDER, filename)
+        agent = Agent(task=f"go to {url}")
+        history = asyncio.run(agent.run())
+        screenshots = history.screenshots() if hasattr(history, 'screenshots') else []
+        if screenshots:
+            # Save the first screenshot to the folder
+            screenshot_path = os.path.join(SCREENSHOTS_FOLDER, 'screenshot1.png')
             with open(screenshot_path, 'wb') as f:
-                if isinstance(screenshots[0], str):
-                    import base64
-                    f.write(base64.b64decode(screenshots[1]))
-                else:
-                    f.write(screenshots[0])
-            return jsonify({'screenshot': f'/screenshots/{filename}'})
+                f.write(screenshots[0])
+            return jsonify({'screenshot': f'/screenshots/screenshot1.png'})
         return jsonify({'error': 'No screenshot found'}), 404
     except Exception as e:
-        import traceback
-        print("Exception in fetch_screenshot:", traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/fetch_all_screenshots', methods=['POST'])
@@ -507,36 +406,18 @@ def api_fetch_all_screenshots():
     if not url:
         return jsonify({'error': 'No URL provided'}), 400
     try:
-        llm = get_agent_llm()
-        prompt = (
-            f"{info}\ngo to {url} wait until the page is fully loaded and the <body> element is visible, "
-            "wait for all network requests to finish, then take a screenshot of the full page"
-            if info else
-            f"go to {url} wait until the page is fully loaded and the <body> element is visible, "
-            "wait for all network requests to finish, then take a screenshot of the full page"
-        )
-        agent = Agent(task=prompt, llm=llm, browser_profile=get_browser_profile())
-        history = asyncio.run(agent.run(max_steps=10))
-        screenshots = []
-        if hasattr(history, 'screenshots'):
-            screenshots = history.screenshots()
-        elif isinstance(history, dict) and 'screenshots' in history:
-            screenshots = history['screenshots']
+        prompt = f"{info}\ngo to {url}" if info else f"go to {url}"
+        agent = Agent(task=prompt)
+        history = asyncio.run(agent.run())
+        screenshots = history.screenshots() if hasattr(history, 'screenshots') else []
         screenshot_paths = []
         for i, screenshot in enumerate(screenshots):
-            filename = f'screenshot_{uuid.uuid4().hex[:8]}_{i+1}.png'
-            screenshot_path = os.path.join(SCREENSHOTS_FOLDER, filename)
+            screenshot_path = os.path.join(SCREENSHOTS_FOLDER, f'screenshot{i + 1}.png')
             with open(screenshot_path, 'wb') as f:
-                if isinstance(screenshot, str):
-                    import base64
-                    f.write(base64.b64decode(screenshot))
-                else:
-                    f.write(screenshot)
-            screenshot_paths.append(f'/screenshots/{filename}')
+                f.write(screenshot)
+            screenshot_paths.append(f'/screenshots/screenshot{i + 1}.png')
         return jsonify({'screenshots': screenshot_paths})
     except Exception as e:
-        import traceback
-        print("Exception in fetch_all_screenshots:", traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
 @app.route('/screenshots/<filename>')
@@ -552,215 +433,79 @@ def api_generate_scenarios():
     if not screenshots:
         return jsonify({'error': 'No screenshots provided'}), 400
 
-    # Compose the prompt
+    # Compose the prompt as per your reference code
     task_prompt = f"Additional Notes: {info}" if info else ""
     url_prompt = f"Refer URL if provided: {url}" if url else ""
     prompt = f"""
     You are a senior QA automation engineer. 
-    Generate an elaborate end-to-end test scenarios in descriptive way for the given image and group the scenario by feature.
+    Generate an elaborate end-to-end test scenario that covers all relevant test cases for the given feature in a single test flow, group by features. 
 
-    URL: {url} 
-
-    Each scenario must follow these guidelines:
-    Strictly write the test scenario as description of the steps to perform.
-    Strictly always start the test scenario with a opening a web page or application using the URL provided.
+    Each scenario should:
+    Include multiple sequential steps that mimic a real user or system behavior.
+    Always start the test scenario with a opening a web page or application.
+    Clearly describe the actions to be performed, including any necessary inputs or interactions.
+    Clearly specify input test data and expected outcomes.
+    Include assertions after each significant step to validate system behavior.
     Mention any preconditions, setup data, or environment assumptions.
+    Cover happy path, edge cases, and any negative checks that can be reasonably tested within the flow.
+    Be written in a clear, concise, and structured format (you may use Gherkin-style, pseudocode, or narrative style depending on clarity).
+    Finally, ensure that the scenarios are grouped logically by feature or functionality to avoid redundancy and improve readability.
     Each scenario should be self-contained and not rely on external context or previous scenarios.
     
-    Strictly use the below format for the response as JSON like:
-    {{
+    The goal is to have a comprehensive grouped testcases that effectively verifies most aspects of the feature under test through a realistic and comprehensive scenario.
+
+    Analyze this image of a web page or application UI.
+    {url_prompt}
+
+    {task_prompt}
+
+    For the scenario, provide:
+    1. A descriptive name
+    2. A detailed comprehensive conjunctive instruction to perform the test scenario
+    3. Relevant tags (comma-separated)
+    
+    Format your response as JSON like this:
+    {
         "scenarios": [
-        {{
+        {
             "name": "test scenario name",
             "description": "Go to the https://url and do all the potential login related steps...",
             "tags": "sample, tags, here"
-        }},
+        },
         ...
         ]
-    }}
-    
-    The goal is to have a comprehensive grouped testcases that effectively verifies most aspects of the feature under test through a realistic and comprehensive scenario.
-    {url_prompt}
-    {task_prompt}
+    }
     """
 
-    # Read and encode selected screenshots as base64
-    scenarios = []
-    for filename in screenshots:
-        # Remove leading slash if present
-        filename = filename.lstrip('/')
-        image_path = os.path.join(SCREENSHOTS_FOLDER, os.path.basename(filename))
-        image_ext = os.path.splitext(os.path.basename(filename))[1].lower()
-        if not os.path.exists(image_path):
-            continue
-        with open(image_path, "rb") as img_file:
-            base64_image = base64.b64encode(img_file.read()).decode('utf-8')
-            try:
-                llm = get_agent_llm()
-                
-                messages = [
-                    SystemMessage(content="You are a QA expert specializing in identifying test scenarios from UI images."),
-                    HumanMessage(content=[
-                        {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": {"url": f"data:image/{image_ext};base64,{base64_image}"}}
-                    ])
-                ]
-                response = llm.invoke(messages)
-                json_match = re.search(r'\{[\s\S]*\}', response.content)
-                if json_match:
-                    scenarios_data = json.loads(json_match.group(0))
-                    scenarios.extend(scenarios_data.get("scenarios", []))
-            except Exception as e:
-                return jsonify({'error': str(e)}), 500
-
-    if scenarios:
-        return jsonify({'scenarios': scenarios}), 200
-    else:
-        return jsonify({'error': 'Could not parse JSON from LLM response'}), 500
-
-@app.route('/api/get_models', methods=['POST'])
-def get_models():
-    data = request.json
-    llm_type = data.get("llm_type")
-    api_key = data.get("api_key")
-    endpoint = data.get("endpoint")  # For Azure/OpenAI/Ollama
-
-    # Dummy model lists for demonstration; replace with real API calls
-    if llm_type == "gemini":
-        # Validate Gemini API key (simulate)
-        if not api_key or not api_key.startswith("AIza"):
-            return jsonify({"error": "Invalid Gemini API key"}), 400
-        # Simulate fetching models
-        return jsonify({"models": [
-            "gemini-1.5-pro-latest",
-            "gemini-1.5-flash-latest",
-            "gemini-2.0-flash-exp"
-        ]})
-    elif llm_type == "azure_openai":
-        if not api_key or not endpoint:
-            return jsonify({"error": "Azure API key and endpoint required"}), 400
-        # Simulate fetching models
-        return jsonify({"models": [
-            "gpt-35-turbo",
-            "gpt-4",
-            "gpt-4-32k"
-        ]})
-    elif llm_type == "openai":
-        if not api_key or not api_key.startswith("sk-"):
-            return jsonify({"error": "Invalid OpenAI API key"}), 400
-        return jsonify({"models": [
-            "gpt-3.5-turbo",
-            "gpt-4",
-            "gpt-4o"
-        ]})
-    elif llm_type == "ollama":
-        # No API key needed, just host
-        return jsonify({"models": [
-            "llama2",
-            "mistral",
-            "phi3"
-        ]})
-    else:
-        return jsonify({"error": "Unsupported LLM type"}), 400
-
-def get_agent_llm():
-    settings = load_settings()
-    agent_llm = settings.get("agent_llm", "gemini")
-    agent_llm_args = settings.get("agent_llm_args", {})
-    agent_model = agent_llm_args.get("model-name", "gemini-2.0-flash-exp")
-    if agent_llm == "gemini":
-        return ChatGoogleGenerativeAI(
-            model=agent_model,
-            api_key=SecretStr(agent_llm_args.get("gemini_api_key", os.getenv('GEMINI_API_KEY'))),
-            temperature=0.2,
-            seed=42
-        )
-    elif agent_llm == "azure_openai":
-        return AzureChatOpenAI(
-            model=agent_model,
-            api_version=agent_llm_args.get("azure_openai_api_version", os.getenv('AZURE_OPENAI_API_VERSION')),
-            azure_endpoint=agent_llm_args.get("azure_openai_api_endpoint", os.getenv('AZURE_OPENAI_API_ENDPOINT')),
-            api_key=SecretStr(agent_llm_args.get("azure_openai_api_key", os.getenv('AZURE_OPENAI_API_KEY')))
-        )
-    elif agent_llm == "openai":
-        from langchain_openai import ChatOpenAI
-        return ChatOpenAI(
-            model=agent_model,
-            api_key=SecretStr(agent_llm_args.get("openai_api_key", os.getenv('OPENAI_API_KEY')))
-        )
-    elif agent_llm == "ollama":
-        from langchain_community.chat_models import ChatOllama
-        return ChatOllama(
-            model=agent_model,
-            base_url=agent_llm_args.get("ollama_host", "http://localhost:11434")
-        )
-    else:
-        raise ValueError(f"Unsupported agent_llm: {agent_llm}")
-
-@app.route('/api/delete_screenshot', methods=['POST'])
-def api_delete_screenshot():
-    data = request.json
-    filename = data.get('filename', '')
-    if not filename:
-        return jsonify({'error': 'No filename provided'}), 400
-    filename = filename.lstrip('/')
-    file_path = os.path.join(SCREENSHOTS_FOLDER, os.path.basename(filename))
-    if os.path.exists(file_path):
-        os.remove(file_path)
-        return jsonify({'success': True})
-    else:
-        return jsonify({'error': 'File not found'}), 404
-
-def get_browser_profile():
-    settings = load_settings()
-    return BrowserProfile(
-        highlight_elements=settings.get("highlight_elements", False),
-        user_data_dir=None,
-        headless=settings.get("headless_mode", False)
-    )
-
-# Thread-safe queue for logs
-log_queue = queue.Queue()
-
-class LogTextHandler(logging.Handler):
-    """Custom logging handler to append logs to QTextEdit and store in database."""
-    def __init__(self):
-        super().__init__()
-        # Regex to detect common timestamp formats
-        self.timestamp_pattern = re.compile(
-            r'(\[\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:,\d+)?(?:\s*[+-]\d{4})?\]|'
-            r'\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:,\d+)?(?:\s*[+-]\d{4})?|'
-            r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:,\d+)?(?:Z|[+-]\d{2}:\d{2})?)'
-        )
-
-    def emit(self, record):
-        msg = record.getMessage()
-        # Check if message contains a timestamp
-        has_timestamp = bool(self.timestamp_pattern.search(msg))
-        if has_timestamp:
-            # Use the raw message as-is
-            formatted_msg = msg
+    # Use the first screenshot for LLM (extend to all if needed)
+    import base64, re
+    from langchain_core.messages import HumanMessage, SystemMessage
+    try:
+        llm = get_llm()  # You should implement get_llm() as in your reference
+        messages = [
+            SystemMessage(content="You are a QA expert specializing in identifying test scenarios from UI images."),
+            HumanMessage(content=[
+                {"type": "text", "text": prompt},
+                {"type": "image_url", "image_url": {"url": screenshots[0]}}
+            ])
+        ]
+        response = llm.invoke(messages)
+        json_match = re.search(r'\{[\s\S]*\}', response.content)
+        if json_match:
+            scenarios_data = json.loads(json_match.group(0))
+            return jsonify({'scenarios': scenarios_data.get("scenarios", [])})
         else:
-            # Apply full formatter with timestamp and level
-            formatted_msg = self.format(record)
-        
-        log_queue.put(formatted_msg)
-
-# Set up logging handler
-logger = logging.getLogger('browser_use')
-logger.setLevel(logging.INFO)
-log_handler = LogTextHandler()
-formatter = logging.Formatter('[%(asctime)s] [%(levelname)s] %(message)s')
-log_handler.setFormatter(formatter)
-logger.addHandler(log_handler)
+            return jsonify({'error': 'Could not parse JSON from LLM response'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/stream')
 def stream():
     def event_stream():
         while True:
-            message = log_queue.get()  # waits until log is available
-            yield f"data: {message}\n\n"
+            message = log_queue.get()  
+            yield f"data: {message}\n"
     return Response(event_stream(), mimetype='text/event-stream')
 
 if __name__ == '__main__':
-    app.run(debug=True, use_reloader=True, threaded=True)
+    app.run(port=5000)
