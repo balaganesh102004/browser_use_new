@@ -2,7 +2,6 @@ import json
 from datetime import datetime
 
 def get_task_description(task_name, all_tasks):
-    print(task_name)
     for task in all_tasks:
         if task["Task name"].lower() == task_name.lower():
             return task["Task description"]
@@ -147,7 +146,7 @@ def render_report(history_data: dict, all_tasks: any, test_run_id: str = None) -
             start = metadata.get("step_start_time", 0)
             end = metadata.get("step_end_time", 0)
             tot_duration += round(end - start, 2)
-        print(f"Task: {task_name}, Status: {task_status}, Duration: {tot_duration} seconds")
+
         task_description = get_task_description(task_name, all_tasks)
         # Add accordion for the task
         report_content += f"""
