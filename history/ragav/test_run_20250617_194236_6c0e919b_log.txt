@@ -1,0 +1,28 @@
+INFO     [browser_use.telemetry.service] Anonymized telemetry enabled. See https://docs.browser-use.com/development/telemetry for more information.
+['Open https://pypi.org/project/requests/ and read the version number displayed next to the package title.']
+INFO     [browser_use.Agent✻a7ae on ⛶a7ae.00] 🧠 Starting a browser-use agent 0.2.6 with base_model=gpt-4.1-nano +tools +vision +memory extraction_model=gpt-4.1-nano
+WARNING  [browser_use.Agent✻a7ae on ⛶a7ae.00] ⚠️ Agent(enable_memory=True) is set but missing some required packages, install and re-run to use memory features: pip install browser-use[memory]
+INFO     [browser_use.Agent✻a7ae on ⛶dc51.00] 🚀 Starting task: Open https://pypi.org/project/requests/ and read the version number displayed next to the package title.
+INFO     [browser_use.BrowserSession⛶dc51.00] 🌎 Launching new local browser playwright:chromium keep_alive=False user_data_dir= <incognito>
+INFO     [browser_use.BrowserSession⛶dc51.00] ➡️ Page navigation [0]about:blank used 0.0 KB in 2.39s
+INFO     [browser_use.Agent✻a7ae on ⛶dc51.48] 📍 Step 1: Evaluating page with 0 interactive elements on: about:blank
+================================================================================
+INFO     [browser_use.Agent✻a7ae on ⛶dc51.48] 🧠 LLM call => AzureChatOpenAI [✉️ 7 msg, ~3167 tk, 17349 char, 📷 img] => JSON out + 🔨 20 tools (function_calling)
+INFO     [browser_use.Agent✻a7ae on ⛶dc51.48] ⚠️ Eval: Failed - The current page is about:blank with no interactive elements. I need to navigate to 'https://pypi.org/project/requests/' to find the version number.
+INFO     [browser_use.Agent✻a7ae on ⛶dc51.48] 🧠 Memory: Initial state with an empty page. No actions taken yet. Next, I will open the target URL to proceed with reading the version number.
+INFO     [browser_use.Agent✻a7ae on ⛶dc51.48] 🎯 Next goal: Open the URL https://pypi.org/project/requests/ to locate and read the version number displayed next to the package title.
+INFO     [browser_use.controller.service] 🔗  Navigated to https://pypi.org/project/requests/
+INFO     [browser_use.Agent✻a7ae on ⛶dc51.48] ☑️ Executed action 1/1: go_to_url(url='https://pypi.org/project/requests/')
+INFO     [browser_use.Agent✻a7ae on ⛶dc51.48] 📍 Step 2: Ran 1 actions in 7.84s: ✅ 1
+INFO     [browser_use.BrowserSession⛶dc51.00] ➡️ Page navigation [0]pypi.org/project/requests/ used 1198.9 KB in 0.51s
+INFO     [browser_use.Agent✻a7ae on ⛶dc51.48] 📍 Step 2: Evaluating page with 26 interactive elements on: https://pypi.org/project/requests/
+================================================================================
+INFO     [browser_use.Agent✻a7ae on ⛶dc51.48] 🧠 LLM call => AzureChatOpenAI [✉️ 10 msg, ~4130 tk, 222541 char, 📷 img] => JSON out + 🔨 20 tools (function_calling)
+INFO     [browser_use.Agent✻a7ae on ⛶dc51.48] 👍 Eval: Success - The version number '2.32.4' is clearly visible next to the package title 'requests' on the page. No unexpected issues encountered.
+INFO     [browser_use.Agent✻a7ae on ⛶dc51.48] 🧠 Memory: Successfully navigated to the requests package page on PyPI. Located and read the version number '2.32.4' displayed next to the package title. Next, I will finalize the task.
+INFO     [browser_use.Agent✻a7ae on ⛶dc51.48] 🎯 Next goal: Complete the task and report the found version number '2.32.4'.
+INFO     [browser_use.Agent✻a7ae on ⛶dc51.48] ☑️ Executed action 1/1: done(text="The version number displayed next to the package title 'requests' on https://pypi.org/project/requests/ is 2.32.4." success=True)
+INFO     [browser_use.Agent✻a7ae on ⛶dc51.48] 📄 Result: The version number displayed next to the package title 'requests' on https://pypi.org/project/requests/ is 2.32.4.
+INFO     [browser_use.Agent✻a7ae on ⛶dc51.48] 📍 Step 3: Ran 1 actions in 5.28s: ✅ 1
+INFO     [browser_use.Agent✻a7ae on ⛶dc51.48] ✅ Task completed successfully
+INFO     [browser_use.BrowserSession⛶dc51.00] 🛑 Closing browser=playwright:chromium browser context <BrowserContext browser=<Browser type=<BrowserType name=chromium executable_path=/root/.cache/ms-playwright/chromium-1169/chrome-linux/chrome> version=136.0.7103.25>>

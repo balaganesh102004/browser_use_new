@@ -1,18 +1,18 @@
 {
     "agent_llm": "azure_openai",
     "agent_llm_args": {
-        "azure_openai_api_key": "96d73255e5a7435eaac3a32c56d7829f",
-        "azure_openai_api_version": "2025-01-01-preview",
-        "azure_openai_api_endpoint": "https://cei-aoai.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2025-01-01-preview",
-        "model-name": "gpt-4o"
+        "azure_openai_api_key": "DXRA9DuRLI6fADnkaPDAnf2VqaHT1BpC6s9I22Khn73FWDt3vrKFJQQJ99BFACHYHv6XJ3w3AAAAACOGkUjS",
+        "azure_openai_api_version": "2024-12-01-preview",
+        "azure_openai_api_endpoint": "https://bgana-mbrqmrxw-eastus2.cognitiveservices.azure.com/",
+        "model-name": "gpt-4.1-nano"
     },
     "planner_llm": "azure_openai",
     "planner_llm_args": {
-        "azure_openai_api_key": "96d73255e5a7435eaac3a32c56d7829f",
-        "azure_openai_api_version": "2025-01-01-preview",
-        "azure_openai_api_endpoint": "https://cei-aoai.openai.azure.com/openai/deployments/gpt-4o-mini/chat/completions?api-version=2025-01-01-preview",
-        "model-name": "gpt-4o-mini"
+        "azure_openai_api_key": "DXRA9DuRLI6fADnkaPDAnf2VqaHT1BpC6s9I22Khn73FWDt3vrKFJQQJ99BFACHYHv6XJ3w3AAAAACOGkUjS",
+        "azure_openai_api_version": "2024-12-01-preview",
+        "azure_openai_api_endpoint": "https://bgana-mbrqmrxw-eastus2.cognitiveservices.azure.com/",
+        "model-name": "gpt-4.1-nano"
     },
-    "headless_mode": true,
-    "highlight_elements": false
+    "headless_mode": false,
+    "highlight_elements": true
 }
