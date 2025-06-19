@@ -200,8 +200,7 @@
         "Task description": "Visit https://github.com and scroll to the bottom. Confirm footer is visible.",
         "Tags": [
             "scroll",
-            "footer",
-            "google"
+            "footer"
         ]
     },
     {
@@ -243,37 +242,11 @@
     {
         "ID": 29,
         "Task name": "Valid Login",
-        "Task description": "Open your web browser and navigate to https://opensource-demo.orangehrmlive.com/web/index.php/auth/login.Enter valid credentials. Click on the 'Login' button. Verify that the login is successful and user is redirected to the dashboard.",
+        "Task description": "Open your web browser and navigate to https://opensource-demo.orangehrmlive.com/web/index.php/auth/login. Enter 'Admin' in the Username field. Enter 'admin123' in the Password field. Click on the 'Login' button. Verify that the login is successful and user is redirected to the dashboard.",
         "Tags": [
             "login",
             " validation",
             " success"
-        ]
-    },
-    {
-        "ID": 30,
-        "Task name": "Responsive Design Check",
-        "Task description": "Open the web page using the URL https://google.com on various devices (mobile, tablet, desktop) and screen sizes. Verify that the web page layout and elements adjust appropriately for different screen resolutions and maintain usability across all devices.",
-        "Tags": [
-            "responsive design",
-            " usability"
-        ]
-    },
-    {
-        "ID": 31,
-        "Task name": "Verify Header Cart Functionality",
-        "Task description": "Open the https://www.zales.com/necklaces?icid=MEGA:NECK:LP URL. Click on the cart icon in the header. Verify that the cart page is displayed.",
-        "Tags": [
-            "cart_functionality",
-            " header_cart"
-        ]
-    },
-    {
-        "ID": 32,
-        "Task name": "Localhost",
-        "Task description": "Open 'http://127.0.0.1:5000' and execute the first task available",
-        "Tags": [
-            "browser-use"
         ]
     }
 ]

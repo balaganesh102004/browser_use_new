@@ -105,12 +105,9 @@ body {
         box-shadow: 0 1px 4px rgba(34,197,94,0.10);
         background: #22c55e; /* Only keep for success */
     }
-    .status-success {
-    background-color: #22c55e; /* Green */
-    }
-
     .status-failure {
-        background-color: #ef4444; /* Red */
+        background: #ef4444;
+        /* If you want to keep failure pill elsewhere, keep this. Otherwise, remove. */
     }
 
     /* --- TABLE HEADER --- */
